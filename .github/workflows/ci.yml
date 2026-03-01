@@ -34,9 +34,14 @@ jobs:
 
       - name: Check for peer dependency conflicts
         run: |
-          if npm ls --all 2>&1 | grep -qi "invalid\|ERESOLVE\|peer dep"; then
-            echo "Peer dependency conflicts detected. Please resolve 'invalid', 'ERESOLVE', or 'peer dep' issues reported by npm ls."
-            exit 1
+          set +e
+          npm_ls_output="$(npm ls --all 2>&1)"
+          npm_ls_status=$?
+          set -e
+          if [ "$npm_ls_status" -ne 0 ]; then
+            echo "$npm_ls_output"
+            echo "npm ls reported dependency issues (exit code $npm_ls_status)."
+            exit "$npm_ls_status"
           fi
 
       - name: Lint
