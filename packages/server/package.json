@@ -17,7 +17,7 @@
     "@escapemint/storage": "*",
     "archiver": "^7.0.1",
     "cors": "^2.8.5",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
     "playwright": "^1.58.2",
     "unzipper": "^0.12.3",
     "uuid": "^11.0.4",
