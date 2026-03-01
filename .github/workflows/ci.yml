@@ -33,7 +33,11 @@ jobs:
         run: npm ci
 
       - name: Check for peer dependency conflicts
-        run: npm ls --all 2>&1 | grep -i "invalid\|ERESOLVE\|peer dep" && exit 1 || true
+        run: |
+          if npm ls --all 2>&1 | grep -qi "invalid\|ERESOLVE\|peer dep"; then
+            echo "Peer dependency conflicts detected. Please resolve 'invalid', 'ERESOLVE', or 'peer dep' issues reported by npm ls."
+            exit 1
+          fi
 
       - name: Lint
         run: npm run lint
