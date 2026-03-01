@@ -1,6 +1,8 @@
 # User data - NEVER commit
 /data/
 !/data/.gitkeep
+# Historical price data for backtest (OK to commit)
+!packages/web/public/data/
 data.backup
 
 # Dependencies

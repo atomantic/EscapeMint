@@ -25,6 +25,7 @@ export { formatCurrency, formatPercent, summarizeFundState } from './explainer.j
 export {
   getFundStartDate,
   computeTimeWeightedFundSize,
+  computeCashFundTimeWeightedSize,
   computeRealizedAPY,
   computeProjectedAnnualReturn,
   computeFundMetrics,

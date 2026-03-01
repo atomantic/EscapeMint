@@ -115,7 +115,7 @@ function computeTimeSeries(entries: FundEntry[], config: FundConfig): TimeSeries
       // Check for full liquidation using multiple detection methods (matches engine)
       const hasShareTracking = entry.shares !== undefined && entry.shares !== 0
       const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
-      const valueLiquidated = entry.value <= entry.amount + 0.01
+      const valueLiquidated = entry.value > 0 && entry.value <= entry.amount + 0.01
       // In accumulate mode, partial sells don't reduce invested (they're profit extraction)
       // In harvest mode, all sells reduce invested
       const isAccumulate = config.accumulate
@@ -463,7 +463,7 @@ export function StackedAreaChart({
     <div className="bg-slate-800 rounded-lg p-3 border border-slate-700 flex flex-col h-[200px]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2">
         <h3 className="text-sm font-medium text-white">{title}</h3>
-        <div className="flex flex-wrap gap-x-2 gap-y-1 sm:gap-3">
+        <div className="chart-legend flex flex-wrap gap-x-2 gap-y-1 sm:gap-3">
           {series.map(s => (
             <span key={s.key} className="text-[9px] sm:text-[10px] text-slate-400 flex items-center gap-1">
               <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
@@ -1138,7 +1138,7 @@ export function ValueAndFundSizeChart({
     <div className="bg-slate-800 rounded-lg p-3 border border-slate-700 flex flex-col h-[200px]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-2">
         <h3 className="text-sm font-medium text-white">{title}</h3>
-        <div className="flex flex-wrap gap-x-2 gap-y-1 sm:gap-3">
+        <div className="chart-legend flex flex-wrap gap-x-2 gap-y-1 sm:gap-3">
           <span className="text-[9px] sm:text-[10px] text-slate-400 flex items-center gap-1">
             <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: '#f59e0b' }} />
             Value{latestData && <span className="text-white ml-1">{formatCurrencyCompact(latestData.value)}</span>}
@@ -1367,7 +1367,7 @@ export function MarginChart({
     <div className="bg-slate-800 rounded-lg p-3 border border-slate-700 flex flex-col h-[200px]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-white">{title}</h3>
-        <div className="flex gap-2">
+        <div className="chart-legend flex gap-2">
           <span className="text-[10px] text-slate-400 flex items-center gap-1">
             <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#22c55e' }} />
             Available

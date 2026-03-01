@@ -48,7 +48,7 @@ function computePostActionEquity(entry: FundEntry): number {
   if (action === 'SELL' || action === 'CLOSE') {
     const sellAmount = entry.amount ?? 0
     // Check for full liquidation: selling everything or close to it
-    if (entry.value <= sellAmount + 0.01) {
+    if (entry.value > 0 && entry.value <= sellAmount + 0.01) {
       return 0
     }
     return Math.max(0, entry.value - sellAmount)
@@ -217,16 +217,39 @@ fundsRouter.get('/aggregate', async (req, res, next) => {
       cashFlows
     )
 
-    // Override APY with values from computeFundFinalMetrics which uses
-    // compound interest formula matching the fund detail page
+    // Override with values from computeFundFinalMetrics which correctly handles
+    // accumulate mode, pre-action entry values, and compound interest APY
     const finalMetrics = computeFundFinalMetrics(fund)
     metrics.realizedAPY = finalMetrics.realizedApy
     metrics.liquidAPY = finalMetrics.liquidApy
+    metrics.realizedGains = finalMetrics.realized
+    metrics.unrealizedGains = finalMetrics.unrealized
+    metrics.currentValue = finalMetrics.currentValue
+
+    // Recompute derived fields that depend on the overridden values
+    metrics.gainUsd = isCashFund ? metrics.realizedGains : metrics.unrealizedGains
+    metrics.gainPct = metrics.startInput > 0 ? metrics.gainUsd / metrics.startInput : 0
+    metrics.projectedAnnualReturn = metrics.currentValue * metrics.realizedAPY
 
     fundMetrics.push(metrics)
   }
 
-  const aggregate = computeAggregateMetrics(fundMetrics)
+  // Compute portfolioDays from earliest first entry to latest last entry
+  let earliestDate: string | undefined
+  let latestDate: string | undefined
+  for (const fund of funds) {
+    if (fund.entries.length === 0) continue
+    const sorted = [...fund.entries].sort((a, b) => a.date.localeCompare(b.date))
+    const first = sorted[0]!.date
+    const last = sorted[sorted.length - 1]!.date
+    if (!earliestDate || first < earliestDate) earliestDate = first
+    if (!latestDate || last > latestDate) latestDate = last
+  }
+  const portfolioDays = earliestDate && latestDate
+    ? Math.max(1, Math.floor((new Date(latestDate).getTime() - new Date(earliestDate).getTime()) / (24 * 60 * 60 * 1000)))
+    : undefined
+
+  const aggregate = computeAggregateMetrics(fundMetrics, portfolioDays)
   res.json(aggregate)
 })
 
@@ -717,10 +740,40 @@ fundsRouter.get('/history', async (req, res, next) => {
       today,
       cashFlowsForMetrics
     )
+
+    // Override with values from computeFundFinalMetrics which correctly handles
+    // accumulate mode, pre-action entry values, and compound interest APY
+    const finalMetrics = computeFundFinalMetrics(fund)
+    metrics.realizedAPY = finalMetrics.realizedApy
+    metrics.liquidAPY = finalMetrics.liquidApy
+    metrics.realizedGains = finalMetrics.realized
+    metrics.unrealizedGains = finalMetrics.unrealized
+    metrics.currentValue = finalMetrics.currentValue
+
+    // Recompute derived fields that depend on the overridden values
+    metrics.gainUsd = isCashFund ? metrics.realizedGains : metrics.unrealizedGains
+    metrics.gainPct = metrics.startInput > 0 ? metrics.gainUsd / metrics.startInput : 0
+    metrics.projectedAnnualReturn = metrics.currentValue * metrics.realizedAPY
+
     fundMetricsForAggregate.push(metrics)
   }
 
-  const aggregate = computeAggregateMetrics(fundMetricsForAggregate)
+  // Compute portfolioDays from earliest first entry to latest last entry
+  let histEarliestDate: string | undefined
+  let histLatestDate: string | undefined
+  for (const fund of funds) {
+    if (fund.entries.length === 0) continue
+    const sorted = [...fund.entries].sort((a, b) => a.date.localeCompare(b.date))
+    const first = sorted[0]!.date
+    const last = sorted[sorted.length - 1]!.date
+    if (!histEarliestDate || first < histEarliestDate) histEarliestDate = first
+    if (!histLatestDate || last > histLatestDate) histLatestDate = last
+  }
+  const histPortfolioDays = histEarliestDate && histLatestDate
+    ? Math.max(1, Math.floor((new Date(histLatestDate).getTime() - new Date(histEarliestDate).getTime()) / (24 * 60 * 60 * 1000)))
+    : undefined
+
+  const aggregate = computeAggregateMetrics(fundMetricsForAggregate, histPortfolioDays)
 
   res.json({
     timeSeries,
@@ -825,9 +878,11 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
       _totalBuys += entry.amount
     } else if (entry.action === 'SELL' && entry.amount) {
       // Check for full liquidation
+      // Only use value-based liquidation when value > 0 (value=0 means
+      // "unknown" for imported entries, not "position is worthless")
       const isFullLiquidation = hasShareTracking
         ? Math.abs(sumShares) < 0.0001
-        : entry.value <= entry.amount + 0.01
+        : entry.value > 0 && entry.value <= entry.amount + 0.01
 
       if (isFullLiquidation) {
         // Reset on full liquidation
@@ -1297,10 +1352,12 @@ fundsRouter.post('/:id/preview', async (req, res, next) => {
       _totalSells += entry.amount
       // Check for full liquidation
       // Use sumShares check if fund has share tracking, otherwise fall back to value-based check
+      // Only use value-based liquidation when value > 0 (value=0 means
+      // "unknown" for imported entries, not "position is worthless")
       const hasShareTracking = entry.shares !== undefined && entry.shares !== 0
       const isFullLiquidation = hasShareTracking
         ? Math.abs(sumShares) < 0.0001
-        : entry.value <= entry.amount + 0.01
+        : entry.value > 0 && entry.value <= entry.amount + 0.01
       if (isFullLiquidation) {
         _totalBuys = 0
         _totalSells = 0
@@ -1440,7 +1497,7 @@ fundsRouter.post('/:id/entries', async (req, res, next) => {
           const hasShareTracking = e.shares !== undefined && e.shares !== 0
           const isFullLiquidation = hasShareTracking
             ? Math.abs(sumShares) < 0.0001
-            : (e.value !== undefined && e.value <= e.amount + 0.01)
+            : (e.value !== undefined && e.value > 0 && e.value <= e.amount + 0.01)
           if (isFullLiquidation) {
             invested = 0
             sumShares = 0

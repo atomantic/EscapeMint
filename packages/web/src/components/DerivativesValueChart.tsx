@@ -263,7 +263,7 @@ export function DerivativesValueChart({ entries, resize }: DerivativesValueChart
     <div className="bg-slate-800 rounded-lg p-3 border border-slate-700 flex flex-col h-[200px]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-white">Value & Allocation</h3>
-        <div className="flex gap-3">
+        <div className="chart-legend flex gap-3">
           <span className="text-[10px] text-slate-400 flex items-center gap-1">
             <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#8b5cf6' }} />
             Notional

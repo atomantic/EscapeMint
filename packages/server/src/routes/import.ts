@@ -626,6 +626,100 @@ const parseRobinhoodRow = (row: Record<string, string>): RobinhoodTransaction =>
   }
 }
 
+// ============================================================================
+// CashApp CSV Parsing
+// ============================================================================
+
+/**
+ * Detect if CSV content is from CashApp based on header columns.
+ */
+const isCashAppCSV = (rows: Record<string, string>[]): boolean => {
+  if (rows.length === 0) return false
+  const keys = Object.keys(rows[0] ?? {})
+  return keys.includes('transaction_type') && keys.includes('asset_type') && keys.includes('net_amount')
+}
+
+/**
+ * Parse CashApp CSV row into a ParsedTransaction.
+ * CashApp columns: date, transaction_id, transaction_type, currency, amount, fee, net_amount,
+ *   asset_type, asset_price, asset_amount, status, notes, name_of_sender/receiver, account
+ */
+const parseCashAppRow = (row: Record<string, string>, platform: string): ParsedTransaction | null => {
+  const status = (row['status'] ?? '').toUpperCase()
+  // Skip failed transactions
+  if (status === 'FAILED') return null
+
+  const transType = (row['transaction_type'] ?? '').trim()
+  const assetType = (row['asset_type'] ?? '').toUpperCase().trim()
+
+  // Map transaction type to action
+  let action: ParsedTransaction['action']
+  let symbol = assetType
+
+  const notes = (row['notes'] ?? '').trim()
+
+  if (transType === 'Bitcoin Buy' || transType.endsWith(' Buy')) {
+    action = 'BUY'
+  } else if (transType === 'Bitcoin Sell' || transType.endsWith(' Sell')) {
+    action = 'SELL'
+  } else if (transType === 'Stock Dividends' || transType.endsWith(' Dividends') || transType.endsWith(' Dividend')) {
+    action = 'DIVIDEND'
+  } else if (transType === 'P2P') {
+    // P2P transfers are cash deposits/withdrawals - route to cash fund
+    const amountStr = row['amount'] ?? '0'
+    const amountVal = parseFloat(amountStr.replace(/[$,\s]/g, '')) || 0
+    action = amountVal >= 0 ? 'DEPOSIT' : 'WITHDRAW'
+    symbol = 'CASH'
+  } else if (!transType && notes.toLowerCase().includes('sale of')) {
+    // CashApp sometimes exports sales with empty transaction_type
+    action = 'SELL'
+  } else {
+    // Skip unrecognized transaction types
+    return null
+  }
+
+  // Parse date - format: "2026-02-22 17:59:47 PST"
+  const dateStr = (row['date'] ?? '').trim()
+  const date = dateStr ? dateStr.slice(0, 10) : '' // Take YYYY-MM-DD portion
+  if (!date) return null
+
+  // Parse amounts - strip $, commas, and handle negative with -$
+  const parseAmount = (str: string): number => {
+    if (!str) return 0
+    return Math.abs(parseFloat(str.replace(/[$,\s]/g, '')) || 0)
+  }
+
+  // Use net_amount as the canonical amount:
+  // - For BUYs: net_amount = cost + fee (total out of pocket, correct cost basis)
+  // - For SELLs: net_amount = proceeds - fee (actual cash received)
+  const netAmount = parseAmount(row['net_amount'] ?? '0')
+  const fee = parseAmount(row['fee'] ?? '0')
+  const assetPrice = parseAmount(row['asset_price'] ?? '0')
+  const assetAmount = parseFloat((row['asset_amount'] ?? '0').replace(/[$,\s]/g, '')) || 0
+
+  const description = notes
+
+  // Build fund ID
+  const fundId = symbol === 'CASH'
+    ? `${platform.toLowerCase()}-cash`
+    : symbol
+      ? buildFundId(platform, symbol)
+      : null
+
+  return {
+    date,
+    action,
+    symbol,
+    quantity: Math.abs(assetAmount),
+    price: assetPrice,
+    amount: netAmount,
+    description: description || `${transType} ${symbol ? symbol + ' ' : ''}${assetAmount ? assetAmount + ' @ $' + assetPrice.toLocaleString() : ''}`.trim(),
+    fundId,
+    fundExists: false, // Will be set later
+    rawDetails: { fee: fee.toString() }
+  }
+}
+
 /**
  * Build fund ID from platform and symbol.
  */
@@ -669,15 +763,95 @@ importRouter.post('/robinhood/preview', async (req, res, next) => {
     return next(validationError('No valid data rows found in CSV'))
   }
 
+  // Auto-detect CashApp CSV format and override platform if needed
+  const detectedCashApp = isCashAppCSV(rows)
+  const effectivePlatform = detectedCashApp ? 'cashapp' : platform
+
   // Load existing funds
   const funds = await readAllFunds(FUNDS_DIR).catch(() => [])
-  const cashFundId = `${platform.toLowerCase().replace(/-cash$/, '')}-cash`
+  const cashFundId = `${effectivePlatform.toLowerCase().replace(/-cash$/, '')}-cash`
   const cashFundExists = fundExists(cashFundId, funds)
 
   // Parse and map transactions
   const transactions: ParsedTransaction[] = []
   const bySymbol: Record<string, { count: number; fundId: string | null; fundExists: boolean }> = {}
 
+  // CashApp CSV - use dedicated parser
+  if (detectedCashApp) {
+    for (const row of rows) {
+      const tx = parseCashAppRow(row, effectivePlatform)
+      if (!tx) continue
+
+      // Set fundExists
+      tx.fundExists = tx.fundId ? fundExists(tx.fundId, funds) : false
+
+      // Track by symbol
+      if (tx.symbol) {
+        if (!bySymbol[tx.symbol]) {
+          bySymbol[tx.symbol] = { count: 0, fundId: tx.fundId, fundExists: tx.fundExists }
+        }
+        bySymbol[tx.symbol]!.count++
+      }
+
+      transactions.push(tx)
+
+      // If includeCashImpact, also create a CASH entry for cash-affecting transactions
+      if (includeCashImpact && ['BUY', 'SELL', 'DIVIDEND'].includes(tx.action) && tx.amount > 0) {
+        let cashAction: ParsedTransaction['action']
+        let cashDescription: string
+
+        if (tx.action === 'BUY') {
+          cashAction = 'WITHDRAW'
+          cashDescription = `Trade: Buy ${tx.symbol} (${tx.quantity} @ $${tx.price.toFixed(2)})`
+        } else if (tx.action === 'SELL') {
+          cashAction = 'DEPOSIT'
+          cashDescription = `Trade: Sell ${tx.symbol} (${tx.quantity} @ $${tx.price.toFixed(2)})`
+        } else {
+          // DIVIDEND
+          cashAction = 'DEPOSIT'
+          cashDescription = `Dividend: ${tx.symbol}`
+        }
+
+        // Track as CASH
+        if (!bySymbol['CASH']) {
+          bySymbol['CASH'] = { count: 0, fundId: cashFundId, fundExists: cashFundExists }
+        }
+        bySymbol['CASH']!.count++
+
+        transactions.push({
+          date: tx.date,
+          action: cashAction,
+          symbol: 'CASH',
+          quantity: 0,
+          price: 0,
+          amount: tx.amount,
+          description: cashDescription,
+          fundId: cashFundId,
+          fundExists: cashFundExists
+        })
+      }
+    }
+
+    // Sort by date
+    transactions.sort((a, b) => a.date.localeCompare(b.date))
+
+    const matched = transactions.filter(t => t.fundExists).length
+    const unmatched = transactions.filter(t => t.fundId && !t.fundExists).length
+
+    const preview: ImportPreview = {
+      transactions,
+      summary: {
+        total: transactions.length,
+        matched,
+        unmatched,
+        bySymbol
+      }
+    }
+
+    return res.json(preview)
+  }
+
+  // Robinhood CSV - use existing parser
   for (const row of rows) {
     const parsed = parseRobinhoodRow(row)
     const action = mapTransCode(parsed.transCode, parsed.description, parsed.amount)
@@ -861,7 +1035,48 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
     errors: []
   }
 
+  // Track running shares and last known price per fund to compute pre-action equity value
+  // Initialize from existing fund entries that are BEFORE the earliest imported tx date
+  // for each fund. This prevents incorrect values when importing historical data into
+  // a fund that already has newer entries.
+  const fundRunningShares = new Map<string, number>()
+  const fundLastPrice = new Map<string, number>()
+
+  // Build a map of fundId -> earliest import date so we only initialize from
+  // existing entries that predate the imported transactions
+  const fundEarliestImportDate = new Map<string, string>()
   for (const tx of transactions) {
+    if (!tx.fundId) continue
+    const current = fundEarliestImportDate.get(tx.fundId)
+    if (!current || tx.date < current) {
+      fundEarliestImportDate.set(tx.fundId, tx.date)
+    }
+  }
+
+  for (const [fundId, fund] of fundMap) {
+    let shares = 0
+    let lastPrice = 0
+    let lastPriceDate = ''
+    const earliestImportDate = fundEarliestImportDate.get(fundId)
+    for (const e of fund.entries) {
+      // Only count entries before the earliest imported tx date for this fund
+      if (earliestImportDate && e.date >= earliestImportDate) continue
+      if (e.shares) {
+        shares += e.action === 'SELL' ? -Math.abs(e.shares) : Math.abs(e.shares)
+      }
+      if (e.price && e.price > 0 && e.date >= lastPriceDate) {
+        lastPrice = e.price
+        lastPriceDate = e.date
+      }
+    }
+    fundRunningShares.set(fundId, shares)
+    if (lastPrice > 0) fundLastPrice.set(fundId, lastPrice)
+  }
+
+  // Sort transactions by date to process in chronological order
+  const sortedTxs = [...transactions].sort((a, b) => a.date.localeCompare(b.date))
+
+  for (const tx of sortedTxs) {
     // Skip transactions without fund mapping
     if (!tx.fundId) {
       result.skipped++
@@ -879,11 +1094,18 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
       continue
     }
 
+    // Compute pre-action equity value from running shares and current/last known price
+    const runningShares = fundRunningShares.get(tx.fundId) ?? 0
+    const effectivePrice = tx.price > 0 ? tx.price : (fundLastPrice.get(tx.fundId) ?? 0)
+    const preActionValue = effectivePrice > 0 && runningShares > 0
+      ? runningShares * effectivePrice
+      : 0
+
     // Convert to FundEntry
     const entry: FundEntry = {
       date: tx.date,
-      value: 0, // Will be updated for cash funds
-      notes: `Imported from Robinhood: ${tx.description}`
+      value: Math.round(preActionValue * 100) / 100,
+      notes: `Imported: ${tx.description}`
     }
 
     // Set action-specific fields
@@ -892,6 +1114,10 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
       entry.amount = tx.amount
       entry.shares = tx.quantity
       entry.price = tx.price
+      // Update running shares and last known price for this fund
+      const delta = tx.action === 'SELL' ? -Math.abs(tx.quantity) : Math.abs(tx.quantity)
+      fundRunningShares.set(tx.fundId, runningShares + delta)
+      if (tx.price > 0) fundLastPrice.set(tx.fundId, tx.price)
     } else if (tx.action === 'DIVIDEND') {
       entry.dividend = tx.amount
     } else if (tx.action === 'INTEREST') {
@@ -904,6 +1130,18 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
       entry.amount = Math.abs(tx.amount) // Ensure positive for withdraw
     }
 
+    // Normalize cash-fund DEPOSIT/WITHDRAW to HOLD with signed amounts
+    // The UI renders cash entries using action=HOLD with signed amount: positive=deposit, negative=withdraw
+    if (tx.fundId.endsWith('-cash') && entry.amount) {
+      if (entry.action === 'DEPOSIT') {
+        entry.amount = Math.abs(entry.amount)
+        entry.action = 'HOLD'
+      } else if (entry.action === 'WITHDRAW') {
+        entry.amount = -Math.abs(entry.amount)
+        entry.action = 'HOLD'
+      }
+    }
+
     // Check for duplicate based on transaction type
     let isDuplicate = false
     if (tx.action === 'INTEREST') {
@@ -911,6 +1149,19 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
       isDuplicate = fund.entries.some(e =>
         e.date === entry.date &&
         e.cash_interest === entry.cash_interest
+      )
+    } else if (tx.fundId.endsWith('-cash') && entry.action === 'HOLD') {
+      // Cash fund entries may exist as legacy DEPOSIT/WITHDRAW or normalized HOLD.
+      // Match against both conventions to prevent re-importing the same cash flow.
+      const absAmount = Math.abs(entry.amount ?? 0)
+      const legacyAction = (entry.amount ?? 0) >= 0 ? 'DEPOSIT' : 'WITHDRAW'
+      isDuplicate = fund.entries.some(e =>
+        e.date === entry.date && (
+          // Match normalized HOLD entries (same signed amount)
+          (e.action === 'HOLD' && e.amount === entry.amount) ||
+          // Match legacy DEPOSIT/WITHDRAW entries (unsigned amount)
+          (e.action === legacyAction && Math.abs(e.amount ?? 0) === absAmount)
+        )
       )
     } else {
       // For other actions, check date, action, and amount
@@ -957,12 +1208,16 @@ importRouter.post('/robinhood/apply', async (req, res, next) => {
         updatedFund.entries.sort((a, b) => a.date.localeCompare(b.date))
 
         // Calculate running balance and update value/fund_size fields
+        // Entries may be normalized (HOLD with signed amount) or legacy (DEPOSIT/WITHDRAW)
         let runningBalance = 0
         for (const entry of updatedFund.entries) {
           if (entry.action === 'DEPOSIT' && entry.amount) {
             runningBalance += entry.amount
           } else if (entry.action === 'WITHDRAW' && entry.amount) {
             runningBalance -= entry.amount
+          } else if (entry.action === 'HOLD' && entry.amount) {
+            // Normalized cash entry: amount is already signed
+            runningBalance += entry.amount
           }
           if (entry.cash_interest) {
             runningBalance += entry.cash_interest

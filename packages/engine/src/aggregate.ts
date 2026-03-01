@@ -61,6 +61,7 @@ export interface AggregateMetrics {
   totalGainPct: number
   activeFunds: number
   closedFunds: number
+  portfolioDays: number
   funds: FundMetrics[]
 }
 
@@ -313,7 +314,7 @@ export function computeFundMetrics(
  * This weights each sub-fund by both its time-weighted capital and duration,
  * giving larger impact to funds with more capital deployed for longer.
  */
-export function computeAggregateMetrics(fundMetrics: FundMetrics[]): AggregateMetrics {
+export function computeAggregateMetrics(fundMetrics: FundMetrics[], portfolioDays?: number): AggregateMetrics {
   let totalFundSize = 0
   let totalValue = 0
   let totalStartInput = 0
@@ -364,19 +365,31 @@ export function computeAggregateMetrics(fundMetrics: FundMetrics[]): AggregateMe
     fundSharesPct: totalFundShares > 0 ? fund.fundShares / totalFundShares : 0
   }))
 
-  // Compute weighted realized APY using fund shares weighting
-  // Each fund's APY contribution = fund's APY * fund's share percentage
-  let weightedRealizedAPY = 0
+  // Dollar-weighted compound APY: annualize the portfolio-level return once
+  // totalDollarDays = sum(TWFS_i * daysActive_i) represents total capital-time deployed
+  let totalDollarDays = 0
+  let maxDaysActive = 0
   for (const fund of fundsWithSharesPct) {
-    weightedRealizedAPY += fund.realizedAPY * fund.fundSharesPct
+    totalDollarDays += fund.timeWeightedFundSize * fund.daysActive
+    if (fund.daysActive > maxDaysActive) maxDaysActive = fund.daysActive
+  }
+  const effectivePortfolioDays = portfolioDays ?? maxDaysActive
+  const avgCapital = effectivePortfolioDays > 0 ? totalDollarDays / effectivePortfolioDays : 0
+
+  // Realized APY: compound formula from total realized gains over dollar-weighted avg capital
+  let weightedRealizedAPY = 0
+  if (avgCapital > 0 && effectivePortfolioDays > 0) {
+    const totalReturn = Math.max(-0.99, totalRealizedGains / avgCapital)
+    weightedRealizedAPY = Math.pow(1 + totalReturn, DAYS_PER_YEAR / effectivePortfolioDays) - 1
   }
 
-  // Compute aggregate liquid APY directly from totals (not weighted average)
-  // Liquid gain = unrealized (paper gain) + realized (dividends, interest, etc.)
-  // This gives the total gain if you liquidated everything
+  // Liquid APY: compound formula from total gain (realized + unrealized)
   const totalGainUsd = totalRealizedGains + totalUnrealizedGains
-  const avgDaysActive = fundMetrics.length > 0 ? totalDaysActive / fundMetrics.length : 1
-  const aggregateLiquidAPY = computeLiquidAPY(totalGainUsd, totalTimeWeightedFundSize, avgDaysActive)
+  let aggregateLiquidAPY = 0
+  if (avgCapital > 0 && effectivePortfolioDays > 0) {
+    const liquidReturn = Math.max(-0.99, totalGainUsd / avgCapital)
+    aggregateLiquidAPY = Math.pow(1 + liquidReturn, DAYS_PER_YEAR / effectivePortfolioDays) - 1
+  }
 
   // Projected annual return is sum of all active funds' projections
   const projectedAnnualReturn = fundsWithSharesPct
@@ -400,6 +413,7 @@ export function computeAggregateMetrics(fundMetrics: FundMetrics[]): AggregateMe
     totalGainPct,
     activeFunds,
     closedFunds,
+    portfolioDays: effectivePortfolioDays,
     funds: fundsWithSharesPct
   }
 }

@@ -235,34 +235,61 @@ input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
+  border-radius: 4px;
+  height: 6px;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 4px;
+  background: inherit;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: #ffffff;
   cursor: pointer;
-  border: 2px solid #64748b;
-}
-
-input[type="range"]::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #ffffff;
-  cursor: pointer;
-  border: 2px solid #64748b;
-}
-
-input[type="range"]::-webkit-slider-track {
-  height: 8px;
-  border-radius: 4px;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  margin-top: -4px;
 }
 
 input[type="range"]::-moz-range-track {
-  height: 8px;
+  height: 6px;
   border-radius: 4px;
+  background: #334155;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  border: 2px solid #3b82f6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Backtest metrics grid - mobile override */
+@media (max-width: 767px) {
+  .metrics-grid-mobile {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Chart legend color indicators */
+.chart-legend span[style*="background-color"],
+.chart-legend span.w-2.h-2,
+.chart-legend span.w-2.h-0\.5 {
+  display: inline-block !important;
+  flex-shrink: 0;
+  min-width: 8px !important;
+  min-height: 8px !important;
+  width: 0.5rem;
+  height: 0.5rem;
 }

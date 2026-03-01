@@ -226,10 +226,10 @@ export function Dashboard() {
         : 1
       // Only annualize APY after minimum days to avoid extreme values from small time windows
       const realizedAPY = point.totalStartInput > 0 && daysElapsed >= MIN_DAYS_FOR_APY
-        ? (point.totalRealizedGain / point.totalStartInput) * (365 / daysElapsed)
+        ? Math.pow(1 + Math.max(-0.99, point.totalRealizedGain / point.totalStartInput), 365 / daysElapsed) - 1
         : 0
       const liquidAPY = point.totalStartInput > 0 && daysElapsed >= MIN_DAYS_FOR_APY
-        ? (point.totalGainUsd / point.totalStartInput) * (365 / daysElapsed)
+        ? Math.pow(1 + Math.max(-0.99, point.totalGainUsd / point.totalStartInput), 365 / daysElapsed) - 1
         : 0
 
       return { ...point, realizedAPY, liquidAPY }
@@ -295,11 +295,6 @@ export function Dashboard() {
       fundSharesPct: totalFundShares > 0 ? fund.fundShares / totalFundShares : 0
     }))
 
-    let weightedRealizedAPY = 0
-    for (const fund of fundsWithSharesPct) {
-      weightedRealizedAPY += fund.realizedAPY * fund.fundSharesPct
-    }
-
     const projectedAnnualReturn = fundsWithSharesPct
       .filter(f => f.currentValue > 0)
       .reduce((sum, f) => sum + f.projectedAnnualReturn, 0)
@@ -309,27 +304,26 @@ export function Dashboard() {
     const totalGainPct = totalStartInput > 0 ? totalGainUsd / totalStartInput : 0
     const unrealizedGainPct = totalStartInput > 0 ? totalUnrealizedGains / totalStartInput : 0
 
-    const avgDaysActive = fundsWithSharesPct.length > 0 ? totalDaysActive / fundsWithSharesPct.length : 1
+    // Dollar-weighted compound APY for filtered platform
+    let totalDollarDays = 0
+    let maxDaysActive = 0
+    for (const fund of fundsWithSharesPct) {
+      totalDollarDays += fund.timeWeightedFundSize * fund.daysActive
+      if (fund.daysActive > maxDaysActive) maxDaysActive = fund.daysActive
+    }
+    const effectivePortfolioDays = maxDaysActive
+    const avgCapital = effectivePortfolioDays > 0 ? totalDollarDays / effectivePortfolioDays : 0
 
-    // Calculate APY with fallback for when time-weighted values are 0
-    let aggregateLiquidAPY = 0
-    let aggregateRealizedAPY = weightedRealizedAPY
-
-    if (totalTimeWeightedFundSize > 0 && avgDaysActive > 0) {
-      // Primary calculation using time-weighted fund size
-      aggregateLiquidAPY = (totalGainUsd / totalTimeWeightedFundSize) * (365 / avgDaysActive)
-    } else if (totalStartInput > 0 && avgDaysActive > 0) {
-      // Fallback: use start input as base
-      aggregateLiquidAPY = (totalGainUsd / totalStartInput) * (365 / avgDaysActive)
+    let aggregateRealizedAPY = 0
+    if (avgCapital > 0 && effectivePortfolioDays > 0) {
+      const totalReturn = Math.max(-0.99, totalRealizedGains / avgCapital)
+      aggregateRealizedAPY = Math.pow(1 + totalReturn, 365 / effectivePortfolioDays) - 1
     }
 
-    // Fallback for realized APY if weighted calculation yielded 0
-    if (aggregateRealizedAPY === 0 && totalRealizedGains !== 0 && avgDaysActive > 0) {
-      if (totalTimeWeightedFundSize > 0) {
-        aggregateRealizedAPY = (totalRealizedGains / totalTimeWeightedFundSize) * (365 / avgDaysActive)
-      } else if (totalStartInput > 0) {
-        aggregateRealizedAPY = (totalRealizedGains / totalStartInput) * (365 / avgDaysActive)
-      }
+    let aggregateLiquidAPY = 0
+    if (avgCapital > 0 && effectivePortfolioDays > 0) {
+      const liquidReturn = Math.max(-0.99, totalGainUsd / avgCapital)
+      aggregateLiquidAPY = Math.pow(1 + liquidReturn, 365 / effectivePortfolioDays) - 1
     }
 
     return {

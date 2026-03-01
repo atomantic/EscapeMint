@@ -9,9 +9,23 @@ npm run setup              # Install deps, build packages, initialize data
 npm run dev                # Start PM2 servers (API + Web + Browser), shows logs
 npm run dev:stop           # Stop all PM2 servers
 npm run dev:restart        # Restart all PM2 servers
-npm run build              # Build all packages
+npm run build              # Build all packages (for production)
 npm run build:packages     # Build engine + storage only (required before server)
 ```
+
+## Development Workflow
+
+**During `npm run dev`, two servers run on separate ports:**
+- **http://localhost:5550** - Vite dev server (UI) — use this in your browser
+- **http://localhost:5551** - Express API only (no UI in dev mode)
+
+The Express server only serves the UI at port 5551 in production mode (`npm run start`). In development, always use port 5550 for the UI.
+
+**When editing files during development:**
+- `packages/web/` changes — Vite HMR updates the browser automatically, no rebuild needed
+- `packages/server/` changes — PM2 auto-restarts the API server (watch is configured)
+- `packages/engine/` or `packages/storage/` source changes — run `npm run build:packages` to recompile, then PM2 will auto-restart the API server
+- **Do NOT run `npm run build` or `npm run build:web` during development** — it is unnecessary and will cause downtime
 
 ## Testing Commands
 

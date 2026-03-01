@@ -321,9 +321,13 @@ const PLATFORM_IMPORT_METHODS: Record<string, ImportMethod[]> = {
   robinhood: ['csv', 'scrape', 'archive', 'crypto-pdf'],
   m1: ['m1-cash', 'm1-statements'],
   coinbase: ['coinbase-scrape'],
+  cashapp: ['csv'],
   // Default: show all methods (for dashboard or unknown platforms)
   _default: ['csv', 'scrape', 'archive', 'crypto-pdf', 'm1-cash', 'm1-statements', 'coinbase-scrape']
 }
+
+// Platforms with dedicated CSV parser support in the backend
+const CSV_SUPPORTED_PLATFORMS = ['robinhood', 'cashapp']
 
 // Get available methods for a platform
 const getAvailableMethods = (platform?: string): ImportMethod[] => {
@@ -332,6 +336,18 @@ const getAvailableMethods = (platform?: string): ImportMethod[] => {
   const normalized = platform.toLowerCase().replace(/-cash$/, '')
   return PLATFORM_IMPORT_METHODS[normalized] ?? defaultMethods
 }
+
+const PLATFORM_DISPLAY_NAMES: Record<string, string> = {
+  robinhood: 'Robinhood',
+  cashapp: 'Cash App',
+  m1: 'M1',
+  coinbase: 'Coinbase',
+  schwab: 'Schwab',
+  vanguard: 'Vanguard'
+}
+
+const formatPlatformName = (p: string): string =>
+  PLATFORM_DISPLAY_NAMES[p.toLowerCase()] ?? p.charAt(0).toUpperCase() + p.slice(1)
 
 interface ScrapeProgress {
   status: string
@@ -348,7 +364,8 @@ interface ScrapeProgress {
   } | null
 }
 
-export function ImportWizard({ onClose, onImported, platform }: ImportWizardProps) {
+export function ImportWizard({ onClose, onImported, platform: rawPlatform }: ImportWizardProps) {
+  const platform = rawPlatform?.toLowerCase().replace(/-cash$/, '')
   const availableMethods = getAvailableMethods(platform)
   const [step, setStep] = useState<WizardStep>('method')
   const [method, setMethod] = useState<ImportMethod | null>(null)
@@ -813,7 +830,7 @@ export function ImportWizard({ onClose, onImported, platform }: ImportWizardProp
       return
     }
 
-    const result = await previewRobinhoodImport(content, 'robinhood', includeCashImpact)
+    const result = await previewRobinhoodImport(content, platform ?? 'robinhood', includeCashImpact)
     setIsProcessing(false)
 
     if (result.error) {
@@ -839,7 +856,7 @@ export function ImportWizard({ onClose, onImported, platform }: ImportWizardProp
     setSelectedSymbols(matchedSymbols)
     setClearBeforeImport(false)
     setStep('preview')
-  }, [includeCashImpact])
+  }, [includeCashImpact, platform])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -1068,10 +1085,18 @@ export function ImportWizard({ onClose, onImported, platform }: ImportWizardProp
                       Upload CSV File
                     </h3>
                     <p className="text-sm text-slate-400 mt-1">
-                      Import from a downloaded Robinhood transaction history CSV file
+                      {platform && CSV_SUPPORTED_PLATFORMS.includes(platform)
+                        ? `Import from a downloaded ${formatPlatformName(platform)} transaction history CSV file`
+                        : 'Import from a downloaded transaction history CSV file'
+                      }
                     </p>
                     <p className="text-xs text-slate-500 mt-3">
-                      Best for: Stock transactions
+                      {platform === 'cashapp'
+                        ? 'Best for: Cash App investing transactions (stocks & bitcoin)'
+                        : platform && CSV_SUPPORTED_PLATFORMS.includes(platform)
+                          ? `Best for: ${formatPlatformName(platform)} transactions`
+                          : 'Best for: Stock & crypto transactions'
+                      }
                     </p>
                   </button>
                 )}
@@ -2989,7 +3014,9 @@ export function ImportWizard({ onClose, onImported, platform }: ImportWizardProp
             >
               <div className="text-4xl mb-4">📄</div>
               <p className="text-white font-medium mb-2">
-                Drop your Robinhood CSV file here
+                {platform
+                  ? `Drop your ${formatPlatformName(platform)} CSV file here`
+                  : 'Drop your CSV file here'}
               </p>
               <p className="text-slate-400 text-sm mb-4">
                 or click to browse
@@ -3028,7 +3055,10 @@ export function ImportWizard({ onClose, onImported, platform }: ImportWizardProp
               </div>
 
               <p className="text-slate-500 text-xs mt-4">
-                Export from Robinhood: Account → Documents → Account Statements → Transaction History
+                {platform?.toLowerCase().replace(/-cash$/, '') === 'cashapp'
+                  ? 'Export from Cash App: Profile → Documents → Statements → Export CSV'
+                  : 'Export from Robinhood: Account → Documents → Account Statements → Transaction History'
+                }
               </p>
             </div>
           )}

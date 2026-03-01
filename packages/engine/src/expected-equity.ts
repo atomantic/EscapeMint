@@ -32,7 +32,9 @@ function detectFullLiquidation(
 ): boolean {
   const hasShareTracking = trade.shares !== undefined && trade.shares !== 0
   const shareBasedLiquidation = hasShareTracking && Math.abs(sumShares) < 0.0001
-  const valueBasedLiquidation = trade.value !== undefined && trade.value <= trade.amount_usd + 0.01
+  // Only use value-based liquidation when value > 0 (value=0 means
+  // "unknown" for imported entries, not "position is worthless")
+  const valueBasedLiquidation = trade.value !== undefined && trade.value > 0 && trade.value <= trade.amount_usd + 0.01
   const dollarBasedLiquidation = totalSells >= totalBuys
   return shareBasedLiquidation || valueBasedLiquidation || dollarBasedLiquidation
 }

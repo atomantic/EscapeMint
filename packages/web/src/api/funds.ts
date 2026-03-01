@@ -321,6 +321,7 @@ export interface AggregateMetrics {
   totalGainPct: number
   activeFunds: number
   closedFunds: number
+  portfolioDays?: number
   funds: FundMetrics[]
 }
 

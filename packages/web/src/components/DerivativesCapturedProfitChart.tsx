@@ -270,7 +270,7 @@ export function DerivativesCapturedProfitChart({ entries, resize }: DerivativesC
     <div className="bg-slate-800 rounded-lg p-3 border border-slate-700 flex flex-col h-[200px]">
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-white">Captured Profit</h3>
-        <div className="flex gap-2 flex-wrap">
+        <div className="chart-legend flex gap-2 flex-wrap">
           {SERIES.map(s => (
             <span key={s.key} className="text-[10px] text-slate-400 flex items-center gap-1">
               <span

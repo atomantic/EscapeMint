@@ -77,7 +77,7 @@ export const cleanNotesOfDepositWithdrawal = (notes: string | undefined): string
 // Supports +, -, *, / with proper operator precedence
 export const parseFormulaValue = (input: string): number => {
   if (!input) return 0
-  const trimmed = input.trim()
+  const trimmed = input.trim().replace(/,/g, '')
   if (!trimmed.startsWith('=')) return parseFloat(trimmed) || 0
 
   const expr = trimmed.slice(1).replace(/\s/g, '')

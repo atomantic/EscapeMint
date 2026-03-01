@@ -66,6 +66,19 @@ describe('computeStartInput', () => {
     const result = computeStartInput(trades, '2024-01-15')
     expect(result).toBe(0)
   })
+
+  it('does not treat SELL with value=0 as liquidation when totalSells < totalBuys', () => {
+    // Regression: imported entries may have value=0 (unknown), which previously
+    // triggered value-based liquidation (value <= amount_usd) even though the
+    // position was not actually closed. The trade.value > 0 guard prevents this.
+    const trades: Trade[] = [
+      { date: '2024-01-01', amount_usd: 1000, type: 'buy' },
+      { date: '2024-03-01', amount_usd: 200, type: 'sell', value: 0 }
+    ]
+    const result = computeStartInput(trades, '2024-06-01')
+    // Should be a partial sell (1000 - 200 = 800), NOT a liquidation (0)
+    expect(result).toBe(800)
+  })
 })
 
 describe('computeExpectedTarget', () => {
@@ -297,6 +310,31 @@ describe('computeExpectedTarget - SELL handling', () => {
 
     // Selling 50% should reduce total accumulated gain by 50%
     expect(gainAfter).toBeCloseTo(gainBefore * 0.5, 1)
+  })
+})
+
+describe('computeExpectedTarget - value=0 regression', () => {
+  it('SELL with value=0 does not trigger false liquidation', () => {
+    // Regression: imported CSV entries often have value=0 (unknown).
+    // Previously, value-based liquidation (value <= amount_usd) would fire
+    // because 0 <= 200, zeroing out the expected target even though the
+    // position was only partially sold. The trade.value > 0 guard fixes this.
+    const trades: Trade[] = [
+      { date: '2024-01-01', amount_usd: 1000, type: 'buy' },
+      { date: '2024-07-01', amount_usd: 200, type: 'sell', value: 0 }
+    ]
+    const result = computeExpectedTarget(baseConfig, trades, '2025-01-01')
+
+    // Should still have a positive expected target (partial sell, not liquidation)
+    expect(result).toBeGreaterThan(0)
+
+    // Compare with the same scenario without value field - should behave identically
+    const tradesNoValue: Trade[] = [
+      { date: '2024-01-01', amount_usd: 1000, type: 'buy' },
+      { date: '2024-07-01', amount_usd: 200, type: 'sell' }
+    ]
+    const resultNoValue = computeExpectedTarget(baseConfig, tradesNoValue, '2025-01-01')
+    expect(result).toBeCloseTo(resultNoValue, 2)
   })
 })
 

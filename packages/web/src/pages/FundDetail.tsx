@@ -359,8 +359,12 @@ export function FundDetail() {
         // Either condition triggers liquidation (share tracking can accumulate errors over time)
         const hasShareTracking = entry.shares !== undefined && entry.shares !== 0
         const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
-        const valueLiquidated = entry.value <= entry.amount + 0.01
-        const isFullLiquidation = sharesLiquidated || valueLiquidated
+        // Only use value-based liquidation when value > 0 (value=0 means
+        // "unknown" for imported entries, not "position is worthless")
+        const valueLiquidated = entry.value > 0 && entry.value <= entry.amount + 0.01
+        // For derivatives funds, value is always 0 by design, so every SELL
+        // is treated as a full liquidation for cycle tracking purposes
+        const isFullLiquidation = isDerivativesFund || sharesLiquidated || valueLiquidated
 
         // Always track sell proceeds for APY calculation
         sumSellProceeds += entry.amount
@@ -1550,7 +1554,7 @@ export function FundDetail() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold text-white">P&L</h3>
-                      <div className="flex gap-2">
+                      <div className="chart-legend flex gap-2">
                         <span className="text-[10px] text-slate-400 flex items-center gap-1">
                           <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
                           Liquid
@@ -1575,7 +1579,7 @@ export function FundDetail() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <h3 className="text-sm font-semibold text-white">APY</h3>
-                      <div className="flex gap-2">
+                      <div className="chart-legend flex gap-2">
                         <span className="text-[10px] text-slate-400 flex items-center gap-1">
                           <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
                           Liquid

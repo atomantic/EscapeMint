@@ -62,7 +62,7 @@ const AllocationList = memo(function AllocationList({ data, title, valueKey, sho
   return (
     <div className="bg-slate-800 rounded-lg p-2 border border-slate-700">
       <h3 className="text-[10px] font-medium text-white mb-1.5">{title}</h3>
-      <div className="space-y-1.5">
+      <div className="chart-legend space-y-1.5">
         {sortedData.slice(0, 5).map((d, i) => {
           const pct = (d[valueKey] / total * 100)
           const barWidth = (d[valueKey] / maxValue * 100)

@@ -497,7 +497,7 @@ describe('computeAggregateMetrics', () => {
     expect(result.funds[1]?.fundSharesPct).toBeCloseTo(0.5, 2)
   })
 
-  it('calculates weighted realized APY', () => {
+  it('calculates dollar-weighted compound realized APY', () => {
     const funds = [
       {
         id: 'fund1',
@@ -545,8 +545,132 @@ describe('computeAggregateMetrics', () => {
 
     const result = computeAggregateMetrics(funds)
 
-    // Equal weights, so weighted APY should be average = 15%
+    // Equal TWFS and equal days at 365 → compound and linear converge
+    // totalDollarDays = 10000*365 + 10000*365 = 7,300,000
+    // effectivePortfolioDays = 365 (max)
+    // avgCapital = 7,300,000 / 365 = 20,000
+    // totalReturn = 3000 / 20000 = 0.15
+    // APY = (1 + 0.15)^(365/365) - 1 = 0.15
     expect(result.realizedAPY).toBeCloseTo(0.15, 2)
+  })
+
+  it('returns portfolioDays in result', () => {
+    const funds = [
+      {
+        id: 'fund1',
+        platform: 'p1',
+        ticker: 'T1',
+        status: 'active' as const,
+        fundType: 'stock' as const,
+        fundSize: 10000,
+        currentValue: 5000,
+        startInput: 4000,
+        daysActive: 180,
+        timeWeightedFundSize: 4500,
+        realizedGains: 200,
+        unrealizedGains: 0,
+        realizedAPY: 0.10,
+        liquidAPY: 0.10,
+        projectedAnnualReturn: 500,
+        gainUsd: 0,
+        gainPct: 0,
+        fundShares: 0,
+        fundSharesPct: 0
+      }
+    ]
+
+    const result = computeAggregateMetrics(funds)
+    // Without explicit portfolioDays, defaults to max(daysActive) = 180
+    expect(result.portfolioDays).toBe(180)
+  })
+
+  it('uses explicit portfolioDays parameter over max(daysActive)', () => {
+    const funds = [
+      {
+        id: 'fund1',
+        platform: 'p1',
+        ticker: 'T1',
+        status: 'active' as const,
+        fundType: 'stock' as const,
+        fundSize: 10000,
+        currentValue: 5000,
+        startInput: 4000,
+        daysActive: 180,
+        timeWeightedFundSize: 4500,
+        realizedGains: 200,
+        unrealizedGains: 0,
+        realizedAPY: 0.10,
+        liquidAPY: 0.10,
+        projectedAnnualReturn: 500,
+        gainUsd: 0,
+        gainPct: 0,
+        fundShares: 0,
+        fundSharesPct: 0
+      }
+    ]
+
+    const result = computeAggregateMetrics(funds, 400)
+    expect(result.portfolioDays).toBe(400)
+  })
+
+  it('does not let short-duration high-return funds dominate aggregate APY', () => {
+    // Regression test: Fund B has 50% return in 30 days → ~12,875% if annualized alone
+    // But with dollar-weighted compound, Fund A's larger capital dominates
+    const funds = [
+      {
+        id: 'fundA',
+        platform: 'p1',
+        ticker: 'A',
+        status: 'active' as const,
+        fundType: 'stock' as const,
+        fundSize: 10000,
+        currentValue: 11000,
+        startInput: 10000,
+        daysActive: 365,
+        timeWeightedFundSize: 10000,
+        realizedGains: 1000,
+        unrealizedGains: 0,
+        realizedAPY: 0.10,
+        liquidAPY: 0.10,
+        projectedAnnualReturn: 1100,
+        gainUsd: 0,
+        gainPct: 0,
+        fundShares: 0,
+        fundSharesPct: 0
+      },
+      {
+        id: 'fundB',
+        platform: 'p2',
+        ticker: 'B',
+        status: 'active' as const,
+        fundType: 'stock' as const,
+        fundSize: 1000,
+        currentValue: 1500,
+        startInput: 1000,
+        daysActive: 30,
+        timeWeightedFundSize: 1000,
+        realizedGains: 500,
+        unrealizedGains: 0,
+        realizedAPY: 128.75, // ~12,875% if annualized alone
+        liquidAPY: 128.75,
+        projectedAnnualReturn: 193125,
+        gainUsd: 0,
+        gainPct: 0,
+        fundShares: 0,
+        fundSharesPct: 0
+      }
+    ]
+
+    const result = computeAggregateMetrics(funds)
+
+    // totalDollarDays = 10000*365 + 1000*30 = 3,680,000
+    // effectivePortfolioDays = 365 (max)
+    // avgCapital = 3,680,000 / 365 ≈ 10,082.19
+    // totalReturn = 1500 / 10,082.19 ≈ 0.1488
+    // APY = (1 + 0.1488)^(365/365) - 1 ≈ 0.1488 = ~14.88%
+    expect(result.realizedAPY).toBeCloseTo(0.1488, 2)
+    // Should NOT be anywhere near Fund B's 12,875%
+    expect(result.realizedAPY).toBeLessThan(0.50)
   })
 
   it('calculates total gain USD and percentage', () => {
