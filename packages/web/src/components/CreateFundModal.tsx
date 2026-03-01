@@ -160,8 +160,8 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
         status: 'active',
         fund_type: fundType,
         // Multi-category takes precedence, clear single category when using allocations
-        category: isMultiCategory ? undefined : (category || undefined),
-        category_allocations: isMultiCategory && categoryAllocations.length > 0 ? categoryAllocations : undefined,
+        ...(!isMultiCategory && category ? { category } : {}),
+        ...(isMultiCategory && categoryAllocations.length > 0 ? { category_allocations: categoryAllocations } : {}),
         fund_size_usd: fundType === 'cash' ? formData.fund_size_usd : 0,
         target_apy: features.allowsTrading ? round(formData.target_apy / 100, 4) : (defaults.target_apy ?? 0),
         interval_days: features.allowsTrading ? formData.interval_days : (defaults.interval_days ?? 1),
@@ -384,7 +384,7 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
                         setIsCreatingPlatform(false)
                         setNewPlatformName('')
                         if (!selectedPlatform || !platforms.some(p => p.id === selectedPlatform)) {
-                          if (platforms.length > 0) setSelectedPlatform(platforms[0].id)
+                          if (platforms.length > 0) setSelectedPlatform(platforms[0]!.id)
                         }
                       }}
                       className="px-2 py-2 text-slate-400 hover:text-white shrink-0"

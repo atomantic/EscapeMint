@@ -367,7 +367,7 @@ export function Dashboard() {
           fund.config.category as FundCategory | undefined,
           fund.config.fund_type
         )
-        fundCategoryInfo.set(fund.id, { singleCategory: effectiveCategory })
+        fundCategoryInfo.set(fund.id, effectiveCategory ? { singleCategory: effectiveCategory } : {})
       }
     }
 
@@ -582,7 +582,7 @@ export function Dashboard() {
                       </td>
                       <td className="px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3 text-slate-400 capitalize hidden sm:table-cell">{fund.platform}</td>
                       <td className="px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3 text-right text-white hidden md:table-cell">
-                        {formatCurrency(fund.config.fund_size_usd)}
+                        {formatCurrency(fund.latestFundSize ?? fund.config.fund_size_usd)}
                       </td>
                       <td className="px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3 text-right">
                         <span className={fund.latestEquity?.value ? 'text-mint-400 font-medium' : 'text-slate-500'}>

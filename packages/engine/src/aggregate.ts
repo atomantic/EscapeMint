@@ -391,10 +391,13 @@ export function computeAggregateMetrics(fundMetrics: FundMetrics[], portfolioDay
     aggregateLiquidAPY = Math.pow(1 + liquidReturn, DAYS_PER_YEAR / effectivePortfolioDays) - 1
   }
 
-  // Projected annual return is sum of all active funds' projections
-  const projectedAnnualReturn = fundsWithSharesPct
+  // Projected annual return uses portfolio-level realized APY (already time-weighted)
+  // applied to total active fund value, rather than summing individually-compounded
+  // per-fund projections which inflate short-duration fund returns
+  const totalActiveValue = fundsWithSharesPct
     .filter(f => f.status !== 'closed' && f.currentValue > 0)
-    .reduce((sum, f) => sum + f.projectedAnnualReturn, 0)
+    .reduce((sum, f) => sum + f.currentValue, 0)
+  const projectedAnnualReturn = totalActiveValue * weightedRealizedAPY
 
   const totalGainPct = totalStartInput > 0 ? (totalValue / totalStartInput - 1) : 0
 

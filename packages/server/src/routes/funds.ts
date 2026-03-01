@@ -220,6 +220,7 @@ fundsRouter.get('/aggregate', async (req, res, next) => {
     // Override with values from computeFundFinalMetrics which correctly handles
     // accumulate mode, pre-action entry values, and compound interest APY
     const finalMetrics = computeFundFinalMetrics(fund)
+    metrics.fundSize = finalMetrics.fundSize
     metrics.realizedAPY = finalMetrics.realizedApy
     metrics.liquidAPY = finalMetrics.liquidApy
     metrics.realizedGains = finalMetrics.realized
@@ -744,6 +745,7 @@ fundsRouter.get('/history', async (req, res, next) => {
     // Override with values from computeFundFinalMetrics which correctly handles
     // accumulate mode, pre-action entry values, and compound interest APY
     const finalMetrics = computeFundFinalMetrics(fund)
+    metrics.fundSize = finalMetrics.fundSize
     metrics.realizedAPY = finalMetrics.realizedApy
     metrics.liquidAPY = finalMetrics.liquidApy
     metrics.realizedGains = finalMetrics.realized
@@ -1256,9 +1258,15 @@ fundsRouter.put('/:id', async (req, res, next) => {
   // Update config if provided
   if (config) {
     fund.config = { ...fund.config, ...config }
-    // Handle clearing of optional fields (empty string means delete)
-    if (config.audited === '') {
+    // Handle clearing of optional fields (empty string or null means delete)
+    if (config.audited === '' || config.audited === null) {
       delete fund.config.audited
+    }
+    if (config.category === null) {
+      delete fund.config.category
+    }
+    if (config.category_allocations === null) {
+      delete fund.config.category_allocations
     }
   }
 

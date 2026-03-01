@@ -21,16 +21,28 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check for peer dependency conflicts
+        run: |
+          set +e
+          npm_ls_output="$(npm ls --all 2>&1)"
+          npm_ls_status=$?
+          set -e
+          if [ "$npm_ls_status" -ne 0 ]; then
+            echo "$npm_ls_output"
+            echo "npm ls reported dependency issues (exit code $npm_ls_status)."
+            exit "$npm_ls_status"
+          fi
 
       - name: Lint
         run: npm run lint

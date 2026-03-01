@@ -5,6 +5,24 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    groups:
+      # Group react ecosystem together to prevent version mismatches
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      # Group vitest ecosystem together
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+  - package-ecosystem: npm
+    directory: /pages
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
     schedule:

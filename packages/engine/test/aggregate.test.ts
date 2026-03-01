@@ -754,7 +754,13 @@ describe('computeAggregateMetrics', () => {
 
     const result = computeAggregateMetrics(funds)
 
-    // Only active fund's projected return should be included
-    expect(result.projectedAnnualReturn).toBe(500)
+    // Projected return = totalActiveValue * portfolioRealizedAPY
+    // portfolioRealizedAPY includes all funds (active + closed) for accurate track record
+    // avgCapital = (5000*365 + 2500*365) / 365 = 7500
+    // totalReturn = 1300 / 7500 = 0.17333
+    // weightedRealizedAPY = (1.17333)^(365/365) - 1 = 0.17333
+    // totalActiveValue = 5000 (closed fund has currentValue=0)
+    // projected = 5000 * 0.17333 = 866.67
+    expect(result.projectedAnnualReturn).toBeCloseTo(866.67, 0)
   })
 })

@@ -52,7 +52,7 @@ app.use(errorHandler)
 if (process.env['NODE_ENV'] === 'production') {
   const webDist = join(__dirname, '..', '..', 'web', 'dist')
   app.use(express.static(webDist))
-  app.get('*', (_req, res) => {
+  app.get('{*path}', (_req, res) => {
     res.sendFile(join(webDist, 'index.html'))
   })
 }

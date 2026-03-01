@@ -96,7 +96,7 @@ export function CoinbaseScrapeButton({
             phase: 'complete',
             status: data.message,
             perpRelatedCount: data.perpRelatedCount,
-            cashBalance: data.cashBalance
+            cashBalance: data.cashBalance ?? null
           }))
           toast.success(data.message)
           setIsScraping(false)

@@ -207,7 +207,7 @@ export function FundDetail() {
     )
 
     // Start date derived from first entry (no config dependency)
-    const firstEntryDate = sorted.length > 0 ? new Date(sorted[0].date) : new Date()
+    const firstEntryDate = sorted.length > 0 ? new Date(sorted[0]!.date) : new Date()
 
     // For derivatives funds, use server-computed state if available
     const isDerivativesFund = checkIsDerivativesFund(fund.config.fund_type)
@@ -412,8 +412,10 @@ export function FundDetail() {
       // Cap at 0 - can't have negative invested
       const netInvested = Math.max(0, totalBuys - totalSells)
 
-      // For non-cash managing funds, fund_size = invested amount (override the earlier calculation)
-      if (!manageCash && !isCashFundType) {
+      // For non-cash managing funds in harvest mode, fund_size = invested amount
+      // In accumulate mode, don't override — netInvested grows forever since sells
+      // don't reduce totalSells, so the entry's tracked fund_size is more meaningful
+      if (!manageCash && !isCashFundType && !isAccumulate) {
         fundSize = netInvested
       }
 

@@ -30,10 +30,10 @@ function prepareChartData(entries: ComputedEntry[]): ChartDataPoint[] {
   const result: ChartDataPoint[] = []
   for (const [dateStr, entry] of byDate) {
     const realized = entry.derivRealized ?? 0
-    const funding = entry.derivCumFunding ?? 0
-    const interest = entry.derivCumInterest ?? 0
-    const rebates = entry.derivCumRebates ?? 0
-    const fees = entry.derivCumFees ?? 0  // Positive in data, will negate for display
+    const funding = entry.derivSumFunding ?? 0
+    const interest = entry.derivSumInterest ?? 0
+    const rebates = entry.derivSumRebates ?? 0
+    const fees = entry.derivSumFees ?? 0  // Positive in data, will negate for display
 
     result.push({
       date: new Date(dateStr),

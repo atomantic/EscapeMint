@@ -4,7 +4,17 @@ This directory contains detailed release notes for each version of EscapeMint. T
 
 ## Structure
 
-Each version has its own markdown file following the naming convention:
+### NEXT.md — Unreleased Changes Accumulator
+
+During development, all changelog entries are appended to `NEXT.md`. This file accumulates changes across multiple commits until a release is created.
+
+- `/cam` (commit all my work) automatically adds entries to `NEXT.md`
+- `/release` renames `NEXT.md` to `v{version}.md` and finalizes it with the version number and release date
+- Do NOT create versioned changelog files manually — `/release` handles that
+
+### Versioned Files
+
+Each release has its own markdown file:
 
 ```
 v{major}.{minor}.{patch}.md
@@ -14,6 +24,8 @@ Examples:
 - `v0.9.0.md`
 - `v0.8.0.md`
 - `v0.7.0.md`
+
+These are created automatically by `/release` from `NEXT.md`.
 
 ## Format
 
@@ -28,43 +40,23 @@ Released: YYYY-MM-DD
 
 A brief summary of the release, highlighting the main theme or most important changes.
 
-## 🎉 New Features
+## Added
 
-### Feature Category 1
-- Feature description with technical details
-- Another feature in this category
+- Feature descriptions
 
-### Feature Category 2
-- More features...
+## Changed
 
-## 🐛 Bug Fixes
+- What was changed
 
-### Fix Category
+## Fixed
+
 - Description of what was fixed
-- Impact and technical details
 
-## 🔧 Improvements
+## Removed
 
-### Improvement Category
-- What was improved
-- Why it matters
-
-## 🗑️ Removed
-
-### Deprecated Features
 - What was removed
-- Why it was removed
 
-## 📦 Installation
-
-\`\`\`bash
-git clone https://github.com/atomantic/EscapeMint.git
-cd EscapeMint
-npm run setup
-npm run dev
-\`\`\`
-
-## 🔗 Full Changelog
+## Full Changelog
 
 **Full Diff**: https://github.com/atomantic/EscapeMint/compare/v{prev}...v{current}
 ```
@@ -77,57 +69,33 @@ The GitHub Actions release workflow (`.github/workflows/release.yml`) automatica
 2. If found, uses it as the GitHub release description
 3. If not found, falls back to generating a simple changelog from git commits
 
-## Creating a New Changelog
+## Development Workflow
 
-When working on a new release:
+1. **During Development**: Each `/cam` commit appends entries to `NEXT.md` under the appropriate section (Added, Changed, Fixed, Removed)
 
-1. **During Development**: Add notes to `CHANGELOG.md` under the "Unreleased" or current version section
-   - Follow the format in `CLAUDE.md`: update CHANGELOG.md when making features and bug fixes
-
-2. **Before Merging to Main**: Create a detailed changelog file:
-   ```bash
-   # Copy the template or an existing changelog
-   cp .changelogs/v0.9.0.md .changelogs/v{new-version}.md
-
-   # Edit the new file with your release notes
-   # Update: version number, release date, features, fixes, etc.
-   ```
-
-3. **Update Root CHANGELOG.md**: Add a condensed version to the root `CHANGELOG.md` for easy reference
-
-4. **Commit the Changelog**: Include the changelog file in your final PR:
-   ```bash
-   git add .changelogs/v{new-version}.md CHANGELOG.md
-   git commit -m "docs: add changelog for v{new-version}"
-   ```
+2. **During Release** (`/release`):
+   - Determines the version bump from conventional commit prefixes
+   - Bumps `package.json` version
+   - Renames `NEXT.md` → `v{new_version}.md`
+   - Adds version header, release date, and diff link
+   - Commits the version bump + finalized changelog
 
 ## Best Practices
 
-### ✅ Do:
-- Use clear, descriptive section headings
+### Do:
+- Use clear, descriptive entries
 - Group related changes together
 - Include technical details where helpful
 - Explain the "why" not just the "what"
-- Use emoji section headers for visual organization (🎉 ✨ 🐛 🔧 🗑️ 📦)
 - Link to relevant documentation or issues
 - Include upgrade instructions for breaking changes
-- Highlight security improvements
 
-### ❌ Don't:
+### Don't:
+- Create versioned changelog files manually (use `/release`)
 - Use vague descriptions like "various improvements"
 - Include internal implementation details users don't care about
-- Repeat the same information in multiple sections
-- Use raw commit messages without context
-- Forget to update the release date
 - Leave placeholder or TODO content
-
-## Examples
-
-See existing changelog files for examples:
-- `v0.9.0.md` - Major feature release (M1 Margin Borrowing)
-- `v0.8.0.md` - Test infrastructure release
-- `v0.7.0.md` - Mobile UI and chart improvements
-- `v0.6.0.md` - Large multi-feature release (Derivatives)
+- Bump the version in `/cam` — only `/release` does that
 
 ## Maintenance
 
@@ -140,22 +108,6 @@ If you need to update a past release's changelog:
    ```bash
    gh release edit v{version} --notes-file .changelogs/v{version}.md
    ```
-
-### Consistency Check
-
-Periodically verify that:
-- All tagged releases have corresponding changelog files
-- Root `CHANGELOG.md` is in sync with `.changelogs/` directory
-- Release dates match git tag dates
-- Links to full diffs are correct
-
-## Tools
-
-### Generate Coverage Report
-After creating a changelog, you can verify test coverage:
-```bash
-npm run test:coverage-report
-```
 
 ### View Release on GitHub
 ```bash
