@@ -1,6 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --breakpoint-xs: 375px;
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  --color-mint-50: #f0fdf4;
+  --color-mint-100: #dcfce7;
+  --color-mint-200: #bbf7d0;
+  --color-mint-300: #86efac;
+  --color-mint-400: #4ade80;
+  --color-mint-500: #22c55e;
+  --color-mint-600: #16a34a;
+  --color-mint-700: #15803d;
+  --color-mint-800: #166534;
+  --color-mint-900: #14532d;
+}
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -32,192 +50,175 @@ body {
   }
 }
 
-@layer components {
-  /* Form Controls */
-  .form-input {
-    @apply w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500;
+/* Form Controls */
+.form-input {
+  @apply w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500;
+}
+
+.form-select {
+  @apply w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500;
+}
+
+.form-checkbox {
+  @apply w-4 h-4 rounded border-slate-600 bg-slate-700 text-mint-500 focus:ring-mint-500;
+}
+
+.form-label {
+  @apply block text-xs text-slate-400 mb-1;
+}
+
+.form-label-sm {
+  @apply block text-[10px] text-slate-500 mb-1;
+}
+
+/* Buttons */
+.btn {
+  @apply px-4 py-2 rounded transition-colors disabled:opacity-50;
+}
+
+.btn-primary {
+  @apply px-4 py-2 rounded transition-colors disabled:opacity-50 bg-mint-600 text-white hover:bg-mint-700;
+}
+
+.btn-secondary {
+  @apply px-4 py-2 rounded transition-colors disabled:opacity-50 bg-slate-700 text-white hover:bg-slate-600;
+}
+
+.btn-danger {
+  @apply px-4 py-2 rounded transition-colors disabled:opacity-50 bg-red-600 text-white hover:bg-red-700;
+}
+
+.btn-sm {
+  @apply px-2 py-1 text-xs rounded transition-colors;
+}
+
+.btn-icon {
+  @apply p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors;
+}
+
+/* Cards */
+.card {
+  @apply bg-slate-800 rounded-lg border border-slate-700;
+}
+
+.card-body {
+  @apply p-3;
+}
+
+/* Modal */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50;
+}
+
+.modal-content {
+  @apply bg-slate-800 rounded-lg border border-slate-700;
+}
+
+/* Tags/Badges */
+.badge {
+  @apply px-2 py-0.5 text-[10px] font-medium rounded;
+}
+
+.badge-blue {
+  @apply px-2 py-0.5 text-[10px] font-medium rounded bg-blue-900/50 text-blue-300 border border-blue-700;
+}
+
+.badge-orange {
+  @apply px-2 py-0.5 text-[10px] font-medium rounded bg-orange-900/50 text-orange-300 border border-orange-700;
+}
+
+.badge-green {
+  @apply px-2 py-0.5 text-[10px] font-medium rounded bg-green-900/50 text-green-300 border border-green-700;
+}
+
+.badge-slate {
+  @apply px-2 py-0.5 text-[10px] font-medium rounded bg-slate-700 text-slate-400;
+}
+
+/* Table */
+.table-header {
+  @apply border-b border-slate-700 text-slate-400 text-xs;
+}
+
+.table-row {
+  @apply border-b border-slate-700/50 text-xs hover:bg-slate-700/30;
+}
+
+.table-cell {
+  @apply px-2 py-1.5;
+}
+
+/* Text utilities */
+.text-positive {
+  @apply text-green-400;
+}
+
+.text-negative {
+  @apply text-red-400;
+}
+
+.text-value {
+  @apply text-mint-400;
+}
+
+/* Thin scrollbar for mobile horizontal scroll areas */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #475569 transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: #475569;
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: #64748b;
+}
+
+/* Hide scrollbar on mobile for cleaner look (content is still scrollable) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Improve touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .touch-manipulation {
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .form-select {
-    @apply w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500;
-  }
-
-  .form-checkbox {
-    @apply w-4 h-4 rounded border-slate-600 bg-slate-700 text-mint-500 focus:ring-mint-500;
-  }
-
-  .form-label {
-    @apply block text-xs text-slate-400 mb-1;
-  }
-
-  .form-label-sm {
-    @apply block text-[10px] text-slate-500 mb-1;
-  }
-
-  /* Buttons */
-  .btn {
-    @apply px-4 py-2 rounded transition-colors disabled:opacity-50;
-  }
-
-  .btn-primary {
-    @apply btn bg-mint-600 text-white hover:bg-mint-700;
-  }
-
-  .btn-secondary {
-    @apply btn bg-slate-700 text-white hover:bg-slate-600;
-  }
-
-  .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700;
-  }
-
-  .btn-sm {
-    @apply px-2 py-1 text-xs rounded transition-colors;
-  }
-
-  .btn-icon {
-    @apply p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors;
-  }
-
-  /* Cards */
-  .card {
-    @apply bg-slate-800 rounded-lg border border-slate-700;
-  }
-
-  .card-body {
-    @apply p-3;
-  }
-
-  /* Modal */
-  .modal-backdrop {
-    @apply fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50;
-  }
-
-  .modal-content {
-    @apply bg-slate-800 rounded-lg border border-slate-700;
-  }
-
-  /* Tags/Badges */
-  .badge {
-    @apply px-2 py-0.5 text-[10px] font-medium rounded;
-  }
-
-  .badge-blue {
-    @apply badge bg-blue-900/50 text-blue-300 border border-blue-700;
-  }
-
-  .badge-orange {
-    @apply badge bg-orange-900/50 text-orange-300 border border-orange-700;
-  }
-
-  .badge-green {
-    @apply badge bg-green-900/50 text-green-300 border border-green-700;
-  }
-
-  .badge-slate {
-    @apply badge bg-slate-700 text-slate-400;
-  }
-
-  /* Table */
-  .table-header {
-    @apply border-b border-slate-700 text-slate-400 text-xs;
-  }
-
-  .table-row {
-    @apply border-b border-slate-700/50 text-xs hover:bg-slate-700/30;
-  }
-
-  .table-cell {
-    @apply px-2 py-1.5;
-  }
-
-  /* Text utilities */
-  .text-positive {
-    @apply text-green-400;
-  }
-
-  .text-negative {
-    @apply text-red-400;
-  }
-
-  .text-value {
-    @apply text-mint-400;
+  /* Larger touch targets on touch devices */
+  button, [role="button"], a {
+    min-height: 36px;
   }
 }
 
-@layer utilities {
-  /* Thin scrollbar for mobile horizontal scroll areas */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: #475569 transparent;
+/* Responsive text utilities for very small screens */
+@media (max-width: 374px) {
+  .text-xs-mobile {
+    font-size: 10px;
+    line-height: 1.4;
   }
+}
 
-  .scrollbar-thin::-webkit-scrollbar {
-    height: 4px;
-    width: 4px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: #475569;
-    border-radius: 2px;
-  }
-
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #64748b;
-  }
-
-  /* Hide scrollbar on mobile for cleaner look (content is still scrollable) */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Improve touch targets on mobile */
-  @media (hover: none) and (pointer: coarse) {
-    .touch-manipulation {
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Larger touch targets on touch devices */
-    button, [role="button"], a {
-      min-height: 36px;
-    }
-  }
-
-  /* Responsive text utilities for very small screens */
-  @media (max-width: 374px) {
-    .text-xs-mobile {
-      font-size: 10px;
-      line-height: 1.4;
-    }
-  }
-
-  /* Smooth scroll for horizontal containers */
-  .scroll-smooth {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Scroll snap utilities for mobile carousels */
-  .snap-x {
-    scroll-snap-type: x mandatory;
-  }
-
-  .snap-start {
-    scroll-snap-align: start;
-  }
-
-  .snap-center {
-    scroll-snap-align: center;
-  }
+/* Smooth scroll for horizontal containers */
+.scroll-smooth {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Wizard arrow animation for entry form */

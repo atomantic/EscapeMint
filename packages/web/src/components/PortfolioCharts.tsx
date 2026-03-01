@@ -1867,7 +1867,7 @@ export const PortfolioCharts = memo(function PortfolioCharts({ timeSeries, alloc
       <div className="grid grid-cols-1 gap-1.5 sm:hidden">
         <AllocationList data={allocations} title="Fund Allocation" valueKey="fundSize" />
         {categoryAllocations && categoryAllocations.some(c => c.value > 0) && (
-          <CategoryBarChart data={categoryAllocations} margin={marginInfo} title="Portfolio Allocation" />
+          <CategoryBarChart data={categoryAllocations} {...(marginInfo ? { margin: marginInfo } : {})} title="Portfolio Allocation" />
         )}
         <AllocationList data={platformAllocations} title="Platform Allocation" valueKey="value" showPlatformOnly />
       </div>
@@ -1876,7 +1876,7 @@ export const PortfolioCharts = memo(function PortfolioCharts({ timeSeries, alloc
       <div className="hidden sm:grid grid-cols-3 gap-2">
         <PieChart data={allocations} title="Fund Allocation" valueKey="fundSize" />
         {categoryAllocations && categoryAllocations.some(c => c.value > 0) ? (
-          <CategoryBarChart data={categoryAllocations} margin={marginInfo} title="Portfolio Allocation" />
+          <CategoryBarChart data={categoryAllocations} {...(marginInfo ? { margin: marginInfo } : {})} title="Portfolio Allocation" />
         ) : (
           <PieChart data={allocations} title="Asset Allocation" valueKey="value" />
         )}

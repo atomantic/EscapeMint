@@ -20,14 +20,13 @@
   "dependencies": {
     "@escapemint/engine": "*",
     "proper-lockfile": "^4.1.2",
-    "uuid": "^11.0.4"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.3.3",
     "@types/proper-lockfile": "^4.1.4",
-    "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "typescript": "^5.7.2",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }
 }

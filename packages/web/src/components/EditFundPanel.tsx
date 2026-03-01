@@ -90,8 +90,8 @@ export function EditFundPanel({ fundId, fundPlatform, fundTicker, config, onUpda
       status: formData.status,
       fund_type: fundType,
       // Multi-category takes precedence, clear single category when using allocations
-      category: isMultiCategory ? undefined : (category || undefined),
-      category_allocations: isMultiCategory && categoryAllocations.length > 0 ? categoryAllocations : undefined,
+      ...(!isMultiCategory && category ? { category } : {}),
+      ...(isMultiCategory && categoryAllocations.length > 0 ? { category_allocations: categoryAllocations } : {}),
       fund_size_usd: formData.fund_size_usd,
       target_apy: features.allowsTrading ? round(formData.target_apy / 100, 4) : (defaults.target_apy ?? 0),
       interval_days: features.allowsTrading ? formData.interval_days : (defaults.interval_days ?? 1),

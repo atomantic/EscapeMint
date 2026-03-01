@@ -366,7 +366,7 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
                   Possible {digitErrorInfo.type === 'extra' ? 'extra' : 'missing'} digit
                 </p>
                 <p className="text-amber-300/80 text-xs">
-                  Prior equity: {formatCurrency(digitErrorInfo.priorValue)} → You entered: {formatCurrency(digitErrorInfo.newValue)}
+                  Prior equity: {formatCurrency(digitErrorInfo.priorValue ?? 0)} → You entered: {formatCurrency(digitErrorInfo.newValue ?? 0)}
                 </p>
               </div>
             </div>

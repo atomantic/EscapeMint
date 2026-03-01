@@ -64,7 +64,7 @@ const getAxisFontSize = (containerWidth: number) =>
 function computeTimeSeries(entries: FundEntry[], config: FundConfig): TimeSeriesPoint[] {
   const sorted = [...entries].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-  const startDate = sorted.length > 0 ? new Date(sorted[0].date) : new Date()
+  const startDate = sorted.length > 0 ? new Date(sorted[0]!.date) : new Date()
   const result: TimeSeriesPoint[] = []
   const isCashFund = checkIsCashFund(config.fund_type)
   const targetApy = config.target_apy ?? 0

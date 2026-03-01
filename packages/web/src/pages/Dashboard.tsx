@@ -367,7 +367,7 @@ export function Dashboard() {
           fund.config.category as FundCategory | undefined,
           fund.config.fund_type
         )
-        fundCategoryInfo.set(fund.id, { singleCategory: effectiveCategory })
+        fundCategoryInfo.set(fund.id, effectiveCategory ? { singleCategory: effectiveCategory } : {})
       }
     }
 

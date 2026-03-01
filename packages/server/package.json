@@ -16,26 +16,25 @@
     "@escapemint/engine": "*",
     "@escapemint/storage": "*",
     "archiver": "^7.0.1",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
     "playwright": "^1.58.2",
     "unzipper": "^0.12.3",
-    "uuid": "^11.0.4",
+    "uuid": "^13.0.0",
     "ws": "^8.19.0",
-    "zod": "^3.24.1"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
-    "@types/supertest": "^6.0.2",
-    "@types/unzipper": "^0.10.10",
-    "@types/uuid": "^10.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/supertest": "^7.2.0",
+    "@types/unzipper": "^0.10.11",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.0.18",
-    "supertest": "^7.0.0",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
+    "supertest": "^7.2.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }
 }

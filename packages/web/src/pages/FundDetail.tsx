@@ -207,7 +207,7 @@ export function FundDetail() {
     )
 
     // Start date derived from first entry (no config dependency)
-    const firstEntryDate = sorted.length > 0 ? new Date(sorted[0].date) : new Date()
+    const firstEntryDate = sorted.length > 0 ? new Date(sorted[0]!.date) : new Date()
 
     // For derivatives funds, use server-computed state if available
     const isDerivativesFund = checkIsDerivativesFund(fund.config.fund_type)
