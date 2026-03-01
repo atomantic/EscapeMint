@@ -63,7 +63,7 @@
     "@playwright/test": "^1.57.0",
     "eslint": "^9.17.0",
     "eslint-plugin-react": "^7.37.3",
-    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "pm2": "^5.4.3",
