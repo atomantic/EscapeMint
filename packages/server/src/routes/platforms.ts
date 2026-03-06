@@ -17,11 +17,10 @@ import {
   type Platform,
   type PlatformsData
 } from '../utils/platforms.js'
-
-export const platformsRouter: ReturnType<typeof Router> = Router()
-
 import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
 import { createLogger } from '../utils/logger.js'
+
+export const platformsRouter: ReturnType<typeof Router> = Router()
 
 const BACKUPS_DIR = join(DATA_DIR, 'backups')
 const log = createLogger('platforms')

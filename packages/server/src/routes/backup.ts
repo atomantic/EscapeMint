@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { createBackup, listBackups, getDefaultBackupDir, restoreBackup, readBackup, deleteBackup, writeBackup } from '@escapemint/storage'
 import { DATA_DIR } from '../config/paths.js'
-import { badRequest, notFound } from '../middleware/error-handler.js'
+import { badRequest, createError, notFound } from '../middleware/error-handler.js'
 import type { NextFunction, Request, Response } from 'express'
 
 export const backupRouter: ReturnType<typeof Router> = Router()
@@ -35,7 +35,7 @@ backupRouter.post('/', async (_req: Request, res: Response, next: NextFunction) 
       fund_count: result.fund_count
     })
   } else {
-    next(badRequest(result.error ?? 'Unknown error creating backup'))
+    next(createError(result.error ?? 'Unknown error creating backup', 500))
   }
 })
 
@@ -81,7 +81,7 @@ backupRouter.post('/restore/:filename', async (req: Request<{filename: string}>,
       fund_count: result.fund_count
     })
   } else {
-    next(badRequest(result.error ?? 'Unknown error restoring backup'))
+    next(createError(result.error ?? 'Unknown error restoring backup', 500))
   }
 })
 
@@ -121,7 +121,7 @@ backupRouter.delete('/:filename', async (req: Request<{filename: string}>, res: 
       message: 'Backup deleted successfully'
     })
   } else {
-    next(notFound(result.error ?? 'Unknown error deleting backup'))
+    next(createError(result.error ?? 'Failed to delete backup', 500))
   }
 })
 
@@ -154,7 +154,7 @@ backupRouter.post('/upload', async (req: Request, res: Response, next: NextFunct
   const payloadSize = JSON.stringify(backupData).length
   const MAX_PAYLOAD_SIZE = 100 * 1024 * 1024 // 100MB
   if (payloadSize > MAX_PAYLOAD_SIZE) {
-    next(badRequest('Backup data too large (max 100MB)'))
+    next(createError('Backup data too large (max 100MB)', 413, 'PAYLOAD_TOO_LARGE'))
     return
   }
 

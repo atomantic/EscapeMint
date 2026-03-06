@@ -1351,8 +1351,17 @@ const BROWSER_USER_DATA_DIR = join(process.cwd(), '.browser')
  * Connect to an existing Chrome browser via CDP.
  */
 const isLocalhostUrl = (url: string): boolean => {
-  const parsed = new URL(url)
-  return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1'
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1'
+    )
+  } catch {
+    // Treat malformed URLs as non-localhost
+    return false
+  }
 }
 
 const connectToBrowser = async (cdpUrl: string = DEFAULT_CDP_URL): Promise<Browser> => {

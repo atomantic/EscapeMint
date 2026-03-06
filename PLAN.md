@@ -19,7 +19,7 @@ Summary: 48 findings across 22 files. 2 shared utilities to extract.
 |------|-----------------|--------|
 | `packages/server/src/routes/import.ts` | Security | SSRF (CRITICAL) outranks code quality |
 | `packages/server/src/index.ts` | Security | CORS (HIGH) outranks code quality |
-| `packages/server/src/routes/funds.ts` | Bugs & Perf | .catch(next) pattern (CRITICAL) outranks DRY |
+| `packages/server/src/routes/funds.ts` | Bugs & Perf | .catch(next) pattern (CRITICAL) — NOT YET MODIFIED, pending future PR |
 | `packages/server/src/services/websocket.ts` | Bugs & Perf | Missing await (CRITICAL) outranks code quality |
 | `packages/storage/src/fund-store.ts` | Bugs & Perf | Null pointer in release (CRITICAL) |
 | `packages/server/src/routes/platforms.ts` | Code Quality | Swallowed errors (CRITICAL) |
