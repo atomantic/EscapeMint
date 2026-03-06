@@ -384,9 +384,10 @@ export async function fetchAllEntries(): Promise<ApiResult<AuditEntry[]>> {
         })
       )
 
-      for (const result of batchResults) {
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j]
         if (result.status === 'rejected') {
-          console.warn('Fund fetch failed:', result.reason)
+          console.warn(`Fund fetch failed for ${batch[j]?.id ?? 'unknown'}:`, result.reason)
         }
       }
     }
