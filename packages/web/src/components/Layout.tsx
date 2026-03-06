@@ -67,27 +67,32 @@ export function Layout() {
       if (result.error) {
         console.warn('Failed to fetch funds:', result.error)
         toast.error('Failed to load funds')
+        setFunds([])
         return
       }
       if (result.data) setFunds(result.data)
     }).catch((e: unknown) => {
       console.warn('Failed to fetch funds:', e)
       toast.error('Failed to load funds')
+      setFunds([])
     })
     fetchPlatforms(settings.testFundsMode).then(result => {
       if (result.error) {
         console.warn('Failed to fetch platforms:', result.error)
         toast.error('Failed to load platforms')
+        setPlatforms([])
         return
       }
       if (result.data) setPlatforms(result.data)
     }).catch((e: unknown) => {
       console.warn('Failed to fetch platforms:', e)
       toast.error('Failed to load platforms')
+      setPlatforms([])
     })
     fetchActionableFunds(settings.testFundsMode).then(result => {
       if (result.error) {
         console.warn('Failed to fetch actionable funds:', result.error)
+        setActionableFundsCount(0)
         return
       }
       if (result.data) {
@@ -105,6 +110,7 @@ export function Layout() {
       }
     }).catch((e: unknown) => {
       console.warn('Failed to fetch actionable funds:', e)
+      setActionableFundsCount(0)
     })
   }, [settings.testFundsMode])
 

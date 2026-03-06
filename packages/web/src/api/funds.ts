@@ -354,31 +354,40 @@ export async function fetchAllEntries(): Promise<ApiResult<AuditEntry[]>> {
 
     const allEntries: AuditEntry[] = []
 
-    // Fetch details for each fund to get entries (use allSettled to handle partial failures)
-    const results = await Promise.allSettled(
-      (fundsResult.data ?? []).map(async (fundSummary) => {
-        const fundResult = await fetchFund(fundSummary.id)
-        if (fundResult.error) {
-          console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
-          return
-        }
-        if (fundResult.data) {
-          const fund = fundResult.data
-          for (const entry of fund.entries) {
-            allEntries.push({
-              fundId: fund.id,
-              platform: fund.platform,
-              ticker: fund.ticker,
-              ...entry
-            })
-          }
-        }
-      })
-    )
+    // Fetch details for each fund to get entries.
+    // Process in small batches to avoid unbounded concurrency, while still
+    // using allSettled within each batch to handle partial failures.
+    const funds = fundsResult.data ?? []
+    const concurrencyLimit = 10
 
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        console.warn('Fund fetch failed:', result.reason)
+    for (let i = 0; i < funds.length; i += concurrencyLimit) {
+      const batch = funds.slice(i, i + concurrencyLimit)
+
+      const batchResults = await Promise.allSettled(
+        batch.map(async (fundSummary) => {
+          const fundResult = await fetchFund(fundSummary.id)
+          if (fundResult.error) {
+            console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
+            return
+          }
+          if (fundResult.data) {
+            const fund = fundResult.data
+            for (const entry of fund.entries) {
+              allEntries.push({
+                fundId: fund.id,
+                platform: fund.platform,
+                ticker: fund.ticker,
+                ...entry
+              })
+            }
+          }
+        })
+      )
+
+      for (const result of batchResults) {
+        if (result.status === 'rejected') {
+          console.warn('Fund fetch failed:', result.reason)
+        }
       }
     }
 
