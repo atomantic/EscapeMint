@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { join } from 'node:path'
+import { join, basename } from 'node:path'
 import { readdir, readFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { readAllFunds, writeFund, type FundData } from '@escapemint/storage'
@@ -76,6 +76,9 @@ exportRouter.post('/import', async (req: Request, res: Response, next: NextFunct
     }
     if (!fund.id || typeof fund.id !== 'string') {
       return next(badRequest(`Invalid fund at index ${i}: id is required`))
+    }
+    if (fund.id !== basename(fund.id) || !/^[a-z0-9-]+$/.test(fund.id)) {
+      return next(badRequest(`Invalid fund at index ${i}: id contains invalid characters`))
     }
     if (!fund.platform || typeof fund.platform !== 'string') {
       return next(badRequest(`Invalid fund at index ${i}: platform is required`))
