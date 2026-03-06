@@ -1,4 +1,7 @@
 import type { Request, Response, NextFunction, ErrorRequestHandler } from 'express'
+import { createLogger } from '../utils/logger.js'
+
+const log = createLogger('error-handler')
 
 export interface ApiError extends Error {
   statusCode?: number
@@ -14,12 +17,12 @@ export const errorHandler: ErrorRequestHandler = (
   const statusCode = err.statusCode ?? 500
   const message = err.message || 'Internal Server Error'
 
-  // Known client errors (4xx) get single-line emoji log, unknown errors (5xx) get stack trace
+  // Known client errors (4xx) get a single-line warning, server errors (5xx) get an error log plus stack trace
   if (statusCode >= 400 && statusCode < 500) {
-    console.warn(`⚠️ ${statusCode} ${err.code ?? 'CLIENT_ERROR'}: ${message}`)
+    log.warn(`${statusCode} ${err.code ?? 'CLIENT_ERROR'}: ${message}`)
   } else {
-    console.error(`❌ ${statusCode} ${err.code ?? 'INTERNAL_ERROR'}: ${message}`)
-    console.error(err.stack)
+    log.error(`${statusCode} ${err.code ?? 'INTERNAL_ERROR'}: ${message}`)
+    log.error(err.stack ?? 'No stack trace')
   }
 
   res.status(statusCode).json({

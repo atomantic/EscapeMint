@@ -35,7 +35,9 @@ export function getDismissedFundIds(): Set<string> {
       return new Set(ids.filter((id): id is string => typeof id === 'string'))
     }
     return new Set()
-  } catch {
+  } catch (e: unknown) {
+    console.warn('Failed to parse dismissed fund IDs:', e)
+    sessionStorage.removeItem(DISMISSED_STORAGE_KEY)
     return new Set()
   }
 }

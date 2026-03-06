@@ -147,13 +147,19 @@ async function sendDashboardData(client: WSClient): Promise<void> {
 }
 
 // Notify all clients when fund data changes
-export function notifyFundsChanged(): void {
+export async function notifyFundsChanged(): Promise<void> {
   invalidateCache()
 
-  // Re-send data to all subscribed clients
-  for (const [, client] of clients) {
-    if (client.subscriptions.has('dashboard')) {
-      sendDashboardData(client)
+  // Re-send data to all subscribed clients concurrently
+  const dashboardClients = [...clients.values()].filter(c =>
+    c.subscriptions.has('dashboard')
+  )
+  const results = await Promise.allSettled(
+    dashboardClients.map(client => sendDashboardData(client))
+  )
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      console.warn('⚠️ sendDashboardData failed:', result.reason)
     }
   }
 }

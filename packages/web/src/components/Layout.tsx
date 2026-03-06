@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Outlet, Link, useLocation } from 'react-router-dom'
+import { toast } from 'sonner'
 import { fetchFunds, fetchActionableFunds, FUNDS_CHANGED_EVENT, type FundSummary } from '../api/funds'
 import { fetchPlatforms, type Platform } from '../api/platforms'
 import { useSettings } from '../contexts/SettingsContext'
@@ -39,7 +40,13 @@ export function Layout() {
   const [actionableFundsCount, setActionableFundsCount] = useState(0)
   const [expandedPlatforms, setExpandedPlatforms] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(EXPANDED_PLATFORMS_KEY)
-    return saved ? new Set(JSON.parse(saved)) : new Set()
+    if (!saved) return new Set()
+    try {
+      return new Set(JSON.parse(saved))
+    } catch {
+      localStorage.removeItem(EXPANDED_PLATFORMS_KEY)
+      return new Set()
+    }
   })
 
   useEffect(() => {
@@ -63,12 +70,37 @@ export function Layout() {
   // Load funds and platforms based on testFundsMode setting
   const loadFundsAndPlatforms = useCallback(() => {
     fetchFunds(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch funds:', result.error)
+        toast.error('Failed to load funds')
+        setFunds([])
+        return
+      }
       if (result.data) setFunds(result.data)
-    }).catch((e: unknown) => console.warn('Failed to fetch funds:', e))
+    }).catch((e: unknown) => {
+      console.warn('Failed to fetch funds:', e)
+      toast.error('Failed to load funds')
+      setFunds([])
+    })
     fetchPlatforms(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch platforms:', result.error)
+        toast.error('Failed to load platforms')
+        setPlatforms([])
+        return
+      }
       if (result.data) setPlatforms(result.data)
-    }).catch((e: unknown) => console.warn('Failed to fetch platforms:', e))
+    }).catch((e: unknown) => {
+      console.warn('Failed to fetch platforms:', e)
+      toast.error('Failed to load platforms')
+      setPlatforms([])
+    })
     fetchActionableFunds(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch actionable funds:', result.error)
+        setActionableFundsCount(0)
+        return
+      }
       if (result.data) {
         // Filter out dismissed funds and stock funds when market is closed
         // Market status recalculates on each data fetch, which handles day transitions
@@ -82,7 +114,10 @@ export function Layout() {
         }).length
         setActionableFundsCount(visibleCount)
       }
-    }).catch((e: unknown) => console.warn('Failed to fetch actionable funds:', e))
+    }).catch((e: unknown) => {
+      console.warn('Failed to fetch actionable funds:', e)
+      setActionableFundsCount(0)
+    })
   }, [settings.testFundsMode])
 
   // Fetch funds, platforms, and version on mount and when testFundsMode changes
@@ -91,7 +126,9 @@ export function Layout() {
     fetch(`${API_BASE}/version`)
       .then(res => res.json())
       .then(data => setVersion(data.version))
-      .catch((e: unknown) => console.warn('Failed to fetch version:', e))
+      .catch((e: unknown) => {
+        console.warn('Failed to fetch version:', e)
+      })
   }, [loadFundsAndPlatforms])
 
   // Listen for funds changed event

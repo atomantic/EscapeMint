@@ -345,36 +345,61 @@ export interface AuditEntry {
 }
 
 export async function fetchAllEntries(): Promise<ApiResult<AuditEntry[]>> {
-  // Fetch all funds and flatten their entries
-  const fundsResult = await fetchFunds()
-  if (fundsResult.error) {
-    return { error: fundsResult.error }
-  }
+  try {
+    // Fetch all funds and flatten their entries
+    const fundsResult = await fetchFunds()
+    if (fundsResult.error) {
+      return { error: fundsResult.error }
+    }
 
-  const allEntries: AuditEntry[] = []
+    const allEntries: AuditEntry[] = []
 
-  // Fetch details for each fund to get entries
-  const promises = (fundsResult.data ?? []).map(async (fundSummary) => {
-    const fundResult = await fetchFund(fundSummary.id)
-    if (fundResult.data) {
-      const fund = fundResult.data
-      for (const entry of fund.entries) {
-        allEntries.push({
-          fundId: fund.id,
-          platform: fund.platform,
-          ticker: fund.ticker,
-          ...entry
+    // Fetch details for each fund to get entries.
+    // Process in small batches to avoid unbounded concurrency, while still
+    // using allSettled within each batch to handle partial failures.
+    const funds = fundsResult.data ?? []
+    const concurrencyLimit = 10
+
+    for (let i = 0; i < funds.length; i += concurrencyLimit) {
+      const batch = funds.slice(i, i + concurrencyLimit)
+
+      const batchResults = await Promise.allSettled(
+        batch.map(async (fundSummary) => {
+          const fundResult = await fetchFund(fundSummary.id)
+          if (fundResult.error) {
+            console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
+            return
+          }
+          if (fundResult.data) {
+            const fund = fundResult.data
+            for (const entry of fund.entries) {
+              allEntries.push({
+                fundId: fund.id,
+                platform: fund.platform,
+                ticker: fund.ticker,
+                ...entry
+              })
+            }
+          }
         })
+      )
+
+      for (let j = 0; j < batchResults.length; j++) {
+        const result = batchResults[j]
+        if (result.status === 'rejected') {
+          console.warn(`Fund fetch failed for ${batch[j]?.id ?? 'unknown'}:`, result.reason)
+        }
       }
     }
-  })
 
-  await Promise.all(promises)
+    // Sort by date descending
+    allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  // Sort by date descending
-  allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  return { data: allEntries }
+    return { data: allEntries }
+  } catch (e: unknown) {
+    console.warn('Failed to fetch all entries:', e)
+    return { error: e instanceof Error ? e.message : 'Failed to fetch entries' }
+  }
 }
 
 // Historical time series data for charts
