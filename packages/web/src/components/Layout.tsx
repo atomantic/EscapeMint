@@ -40,7 +40,8 @@ export function Layout() {
   const [actionableFundsCount, setActionableFundsCount] = useState(0)
   const [expandedPlatforms, setExpandedPlatforms] = useState<Set<string>>(() => {
     const saved = localStorage.getItem(EXPANDED_PLATFORMS_KEY)
-    return saved ? new Set(JSON.parse(saved)) : new Set()
+    if (!saved) return new Set()
+    try { return new Set(JSON.parse(saved)) } catch { return new Set() }
   })
 
   useEffect(() => {

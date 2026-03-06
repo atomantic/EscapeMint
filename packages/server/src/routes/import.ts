@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { join } from 'node:path'
+import { join, basename } from 'node:path'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { platform } from 'node:os'
 import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises'
@@ -541,9 +541,16 @@ const extractSymbol = (title: string, details: Record<string, string>): string |
 /**
  * Load or create scrape archive for a platform
  */
+const sanitizePlatform = (platform: string): string => {
+  const sanitized = platform.replace(/[^a-z0-9-]/g, '')
+  if (!sanitized) throw new Error('Invalid platform name')
+  return sanitized
+}
+
 const loadArchive = async (platform: string): Promise<ScrapeArchive> => {
+  const safePlatform = sanitizePlatform(platform)
   await mkdir(SCRAPE_ARCHIVE_DIR, { recursive: true })
-  const archivePath = join(SCRAPE_ARCHIVE_DIR, `${platform}.json`)
+  const archivePath = join(SCRAPE_ARCHIVE_DIR, `${safePlatform}.json`)
 
   const content = await readFile(archivePath, 'utf-8').catch(() => null)
   if (content) {
@@ -562,8 +569,9 @@ const loadArchive = async (platform: string): Promise<ScrapeArchive> => {
  * Save archive to disk
  */
 const saveArchive = async (archive: ScrapeArchive): Promise<void> => {
+  const safePlatform = sanitizePlatform(archive.platform)
   await mkdir(SCRAPE_ARCHIVE_DIR, { recursive: true })
-  const archivePath = join(SCRAPE_ARCHIVE_DIR, `${archive.platform}.json`)
+  const archivePath = join(SCRAPE_ARCHIVE_DIR, `${safePlatform}.json`)
   archive.updatedAt = new Date().toISOString()
   await writeFile(archivePath, JSON.stringify(archive, null, 2), 'utf-8')
 }
@@ -3103,7 +3111,7 @@ importRouter.post('/crypto/parse', async (req, res, next) => {
     return next(badRequest('filename is required'))
   }
 
-  const filePath = join(CRYPTO_STATEMENTS_DIR, filename)
+  const filePath = join(CRYPTO_STATEMENTS_DIR, basename(filename))
   const pdfBuffer = await readFile(filePath).catch(() => null)
 
   if (!pdfBuffer) {
@@ -4058,7 +4066,7 @@ importRouter.get('/m1-statements/debug-text', async (req, res, next) => {
     return next(badRequest('filename is required'))
   }
 
-  const filePath = join(M1_STATEMENTS_DIR, filename)
+  const filePath = join(M1_STATEMENTS_DIR, basename(filename))
   const pdfBuffer = await readFile(filePath).catch(() => null)
 
   if (!pdfBuffer) {
@@ -4668,7 +4676,7 @@ importRouter.post('/m1-statements/parse', async (req, res, next) => {
     return next(badRequest('filename is required'))
   }
 
-  const filePath = join(M1_STATEMENTS_DIR, filename)
+  const filePath = join(M1_STATEMENTS_DIR, basename(filename))
   const pdfBuffer = await readFile(filePath).catch(() => null)
 
   if (!pdfBuffer) {
