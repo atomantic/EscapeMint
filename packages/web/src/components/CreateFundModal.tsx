@@ -57,7 +57,9 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
   const defaults = FUND_TYPE_DEFAULTS[fundType]
 
   useEffect(() => {
+    let cancelled = false
     fetchPlatforms().then(result => {
+      if (cancelled) return
       if (result.data) {
         setPlatforms(result.data)
         if (result.data.length === 0) {
@@ -72,6 +74,7 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
         }
       }
     })
+    return () => { cancelled = true }
   }, [])
 
   // Update manage_cash default and category when fund type changes

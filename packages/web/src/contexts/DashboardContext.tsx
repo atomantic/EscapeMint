@@ -57,6 +57,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const isUnmountingRef = useRef(false)
+  const connectRef = useRef<() => void>(null)
 
   const connect = useCallback(() => {
     // Don't connect if unmounting
@@ -150,12 +151,15 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
       if (isUnmountingRef.current) return
       setState(prev => ({ ...prev, connected: false }))
 
-      // Attempt reconnect after 3 seconds
+      // Attempt reconnect after 3 seconds using ref to avoid stale closure
       reconnectTimeoutRef.current = window.setTimeout(() => {
-        connect()
+        connectRef.current?.()
       }, 3000)
     }
   }, [settings.testFundsMode])
+
+  // Keep ref in sync so reconnect always uses latest connect
+  connectRef.current = connect
 
   // Refresh data
   const refresh = useCallback(() => {

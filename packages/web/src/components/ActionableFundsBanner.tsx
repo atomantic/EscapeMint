@@ -35,7 +35,8 @@ export function getDismissedFundIds(): Set<string> {
       return new Set(ids.filter((id): id is string => typeof id === 'string'))
     }
     return new Set()
-  } catch {
+  } catch (e: unknown) {
+    console.warn('Failed to parse dismissed fund IDs:', e)
     return new Set()
   }
 }
