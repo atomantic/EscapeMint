@@ -1,9 +1,11 @@
 import { Router } from 'express'
 import { createBackup, listBackups, getDefaultBackupDir, restoreBackup, readBackup, deleteBackup, writeBackup } from '@escapemint/storage'
+import { DATA_DIR } from '../config/paths.js'
+import { badRequest, notFound } from '../middleware/error-handler.js'
+import type { NextFunction, Request, Response } from 'express'
 
 export const backupRouter: ReturnType<typeof Router> = Router()
 
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
 const BACKUP_DIR = process.env['BACKUP_DIR'] ?? getDefaultBackupDir()
 
 /**
@@ -21,7 +23,7 @@ backupRouter.get('/', async (_req, res) => {
 /**
  * POST /backup - Create a new backup
  */
-backupRouter.post('/', async (_req, res) => {
+backupRouter.post('/', async (_req: Request, res: Response, next: NextFunction) => {
   const result = await createBackup(DATA_DIR, BACKUP_DIR)
 
   if (result.success) {
@@ -33,10 +35,7 @@ backupRouter.post('/', async (_req, res) => {
       fund_count: result.fund_count
     })
   } else {
-    res.status(500).json({
-      success: false,
-      error: result.error ?? 'Unknown error creating backup'
-    })
+    next(badRequest(result.error ?? 'Unknown error creating backup'))
   }
 })
 
@@ -55,15 +54,12 @@ backupRouter.get('/config', (_req, res) => {
  * GET /backup/download/:filename - Download a backup as JSON
  * IMPORTANT: This must come before /:filename to match correctly
  */
-backupRouter.get('/download/:filename', async (req, res) => {
+backupRouter.get('/download/:filename', async (req: Request<{filename: string}>, res: Response, next: NextFunction) => {
   const { filename } = req.params
   const backup = await readBackup(BACKUP_DIR, filename)
 
   if (!backup) {
-    res.status(404).json({
-      success: false,
-      error: 'Backup not found'
-    })
+    next(notFound('Backup'))
     return
   }
 
@@ -73,7 +69,7 @@ backupRouter.get('/download/:filename', async (req, res) => {
 /**
  * POST /backup/restore/:filename - Restore a backup
  */
-backupRouter.post('/restore/:filename', async (req, res) => {
+backupRouter.post('/restore/:filename', async (req: Request<{filename: string}>, res: Response, next: NextFunction) => {
   const { filename } = req.params
   const result = await restoreBackup(BACKUP_DIR, filename, DATA_DIR)
 
@@ -85,10 +81,7 @@ backupRouter.post('/restore/:filename', async (req, res) => {
       fund_count: result.fund_count
     })
   } else {
-    res.status(500).json({
-      success: false,
-      error: result.error ?? 'Unknown error restoring backup'
-    })
+    next(badRequest(result.error ?? 'Unknown error restoring backup'))
   }
 })
 
@@ -96,15 +89,12 @@ backupRouter.post('/restore/:filename', async (req, res) => {
  * GET /backup/:filename - Get backup details
  * IMPORTANT: This must come after more specific routes like /download/:filename
  */
-backupRouter.get('/:filename', async (req, res) => {
+backupRouter.get('/:filename', async (req: Request<{filename: string}>, res: Response, next: NextFunction) => {
   const { filename } = req.params
   const backup = await readBackup(BACKUP_DIR, filename)
 
   if (!backup) {
-    res.status(404).json({
-      success: false,
-      error: 'Backup not found'
-    })
+    next(notFound('Backup'))
     return
   }
 
@@ -121,7 +111,7 @@ backupRouter.get('/:filename', async (req, res) => {
 /**
  * DELETE /backup/:filename - Delete a backup
  */
-backupRouter.delete('/:filename', async (req, res) => {
+backupRouter.delete('/:filename', async (req: Request<{filename: string}>, res: Response, next: NextFunction) => {
   const { filename } = req.params
   const result = await deleteBackup(BACKUP_DIR, filename)
 
@@ -131,44 +121,32 @@ backupRouter.delete('/:filename', async (req, res) => {
       message: 'Backup deleted successfully'
     })
   } else {
-    res.status(404).json({
-      success: false,
-      error: result.error ?? 'Unknown error deleting backup'
-    })
+    next(notFound(result.error ?? 'Unknown error deleting backup'))
   }
 })
 
 /**
  * POST /backup/upload - Upload a backup JSON file
  */
-backupRouter.post('/upload', async (req, res) => {
+backupRouter.post('/upload', async (req: Request, res: Response, next: NextFunction) => {
   const backupData = req.body
 
   // Basic validation
   if (!backupData || !backupData.backup_date || !backupData.funds || !backupData.version) {
-    res.status(400).json({
-      success: false,
-      error: 'Invalid backup data: missing required fields'
-    })
+    next(badRequest('Invalid backup data: missing required fields'))
     return
   }
 
   // Validate data types
   if (typeof backupData.backup_date !== 'string' || !Array.isArray(backupData.funds) || typeof backupData.version !== 'string') {
-    res.status(400).json({
-      success: false,
-      error: 'Invalid backup data: incorrect data types'
-    })
+    next(badRequest('Invalid backup data: incorrect data types'))
     return
   }
 
   // Validate version compatibility (currently only supporting 1.0.0)
   const SUPPORTED_VERSIONS = ['1.0.0']
   if (!SUPPORTED_VERSIONS.includes(backupData.version)) {
-    res.status(400).json({
-      success: false,
-      error: `Unsupported backup version: ${backupData.version}. Supported versions: ${SUPPORTED_VERSIONS.join(', ')}`
-    })
+    next(badRequest(`Unsupported backup version: ${backupData.version}. Supported versions: ${SUPPORTED_VERSIONS.join(', ')}`))
     return
   }
 
@@ -176,19 +154,13 @@ backupRouter.post('/upload', async (req, res) => {
   const payloadSize = JSON.stringify(backupData).length
   const MAX_PAYLOAD_SIZE = 100 * 1024 * 1024 // 100MB
   if (payloadSize > MAX_PAYLOAD_SIZE) {
-    res.status(413).json({
-      success: false,
-      error: 'Backup data too large (max 100MB)'
-    })
+    next(badRequest('Backup data too large (max 100MB)'))
     return
   }
 
   // Validate reasonable fund count (max 10000 funds)
   if (backupData.funds.length > 10000) {
-    res.status(400).json({
-      success: false,
-      error: 'Too many funds in backup (max 10000)'
-    })
+    next(badRequest('Too many funds in backup (max 10000)'))
     return
   }
 
@@ -201,9 +173,6 @@ backupRouter.post('/upload', async (req, res) => {
       filename: result.filename
     })
   } else {
-    res.status(400).json({
-      success: false,
-      error: result.error ?? 'Invalid backup data structure'
-    })
+    next(badRequest(result.error ?? 'Invalid backup data structure'))
   }
 })
