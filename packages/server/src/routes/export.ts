@@ -3,11 +3,11 @@ import { join } from 'node:path'
 import { readdir, readFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { readAllFunds, writeFund, type FundData } from '@escapemint/storage'
+import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
+import { badRequest } from '../middleware/error-handler.js'
+import type { NextFunction, Request, Response } from 'express'
 
 export const exportRouter: ReturnType<typeof Router> = Router()
-
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
-const FUNDS_DIR = join(DATA_DIR, 'funds')
 
 /**
  * GET /export - Export all fund data as JSON
@@ -58,36 +58,36 @@ exportRouter.get('/download', async (_req, res, next) => {
 /**
  * POST /export/import - Import fund data from JSON
  */
-exportRouter.post('/import', async (req, res) => {
+exportRouter.post('/import', async (req: Request, res: Response, next: NextFunction) => {
   const { funds, mode = 'merge' } = req.body as {
     funds: FundData[]
     mode?: 'merge' | 'replace'
   }
 
   if (!funds || !Array.isArray(funds)) {
-    return res.status(400).json({ error: { message: 'funds array is required' } })
+    return next(badRequest('funds array is required'))
   }
 
   // Validate each fund has required fields
   for (let i = 0; i < funds.length; i++) {
     const fund = funds[i]
     if (!fund || typeof fund !== 'object') {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: must be an object` } })
+      return next(badRequest(`Invalid fund at index ${i}: must be an object`))
     }
     if (!fund.id || typeof fund.id !== 'string') {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: id is required` } })
+      return next(badRequest(`Invalid fund at index ${i}: id is required`))
     }
     if (!fund.platform || typeof fund.platform !== 'string') {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: platform is required` } })
+      return next(badRequest(`Invalid fund at index ${i}: platform is required`))
     }
     if (!fund.ticker || typeof fund.ticker !== 'string') {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: ticker is required` } })
+      return next(badRequest(`Invalid fund at index ${i}: ticker is required`))
     }
     if (!fund.config || typeof fund.config !== 'object') {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: config is required` } })
+      return next(badRequest(`Invalid fund at index ${i}: config is required`))
     }
     if (!fund.entries || !Array.isArray(fund.entries)) {
-      return res.status(400).json({ error: { message: `Invalid fund at index ${i}: entries array is required` } })
+      return next(badRequest(`Invalid fund at index ${i}: entries array is required`))
     }
   }
 

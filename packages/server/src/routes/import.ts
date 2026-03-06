@@ -8,13 +8,11 @@ import { readAllFunds, appendEntry, readFund, writeFund, type FundEntry, type Fu
 import { badRequest, validationError } from '../middleware/error-handler.js'
 import { PDFParse } from 'pdf-parse'
 import { createLogger } from '../utils/logger.js'
+import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
 
 const log = createLogger('import')
 
 export const importRouter: ReturnType<typeof Router> = Router()
-
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
-const FUNDS_DIR = join(DATA_DIR, 'funds')
 const SCRAPE_ARCHIVE_DIR = join(DATA_DIR, 'scrape-archives')
 const STATEMENTS_DIR = join(DATA_DIR, 'statements')
 const CRYPTO_STATEMENTS_DIR = join(STATEMENTS_DIR, 'robinhood')
@@ -1352,7 +1350,25 @@ const BROWSER_USER_DATA_DIR = join(process.cwd(), '.browser')
 /**
  * Connect to an existing Chrome browser via CDP.
  */
+const isLocalhostUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url)
+    return (
+      parsed.hostname === 'localhost' ||
+      parsed.hostname === '127.0.0.1' ||
+      parsed.hostname === '::1'
+    )
+  } catch {
+    // Treat malformed URLs as non-localhost
+    return false
+  }
+}
+
 const connectToBrowser = async (cdpUrl: string = DEFAULT_CDP_URL): Promise<Browser> => {
+  if (!isLocalhostUrl(cdpUrl)) {
+    throw new Error('CDP URL must point to localhost')
+  }
+
   if (connectedBrowser?.isConnected()) {
     return connectedBrowser
   }

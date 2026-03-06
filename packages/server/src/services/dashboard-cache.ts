@@ -19,8 +19,8 @@ import {
 } from '@escapemint/engine'
 import { computeFundFinalMetrics } from '../utils/fund-metrics.js'
 import { isTestPlatform } from '../utils/platforms.js'
-
-const FUNDS_DIR = join(process.env['DATA_DIR'] ?? './data', 'funds')
+import { FUNDS_DIR } from '../config/paths.js'
+import { getDerivativesConfig } from '../utils/derivatives-config.js'
 
 // Cache entry with timestamp
 interface CacheEntry<T> {
@@ -469,9 +469,7 @@ function computeHistory(funds: FundData[]): DashboardHistory {
   const derivativesStateByFund = new Map<string, Map<string, DerivState>>()
   for (const fund of funds) {
     if (fund.config.fund_type === 'derivatives' && fund.entries.length > 0) {
-      const contractMultiplier = fund.config.contract_multiplier ?? 0.01
-      const maintenanceMarginRate = fund.config.maintenance_margin_rate ?? 0.20
-      const initialMarginRate = fund.config.initial_margin_rate ?? 0.25
+      const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = getDerivativesConfig(fund.config)
       const derivStates = computeDerivativesEntriesState(fund.entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
       const dateMap = new Map<string, DerivState>()
       for (const entry of derivStates) {

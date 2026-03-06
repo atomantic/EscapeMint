@@ -75,7 +75,7 @@ async function withFileLock<T>(filePath: string, fn: () => Promise<T>): Promise<
   try {
     return await fn()
   } finally {
-    await release()
+    if (release) await release()
   }
 }
 

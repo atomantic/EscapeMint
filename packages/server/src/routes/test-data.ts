@@ -11,11 +11,9 @@ import { readAllFunds, writeFund, deleteFund } from '@escapemint/storage'
 import { generateTestFunds, checkPriceDataExists } from '../utils/test-data-generator.js'
 import { badRequest } from '../middleware/error-handler.js'
 import { isTestPlatform } from '../utils/platforms.js'
+import { FUNDS_DIR } from '../config/paths.js'
 
 export const testDataRouter: ReturnType<typeof Router> = Router()
-
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
-const FUNDS_DIR = join(DATA_DIR, 'funds')
 
 /**
  * GET /test-data/status - Check if test data can be generated

@@ -20,7 +20,9 @@ const app: ReturnType<typeof express> = express()
 const server = createServer(app)
 const PORT = process.env['PORT'] ?? 5551
 
-app.use(cors())
+app.use(cors({
+  origin: process.env['ALLOWED_ORIGINS']?.split(',') || ['http://localhost:5550', 'http://localhost:5551']
+}))
 app.use(express.json({ limit: '50mb' }))
 
 // API routes - simplified model

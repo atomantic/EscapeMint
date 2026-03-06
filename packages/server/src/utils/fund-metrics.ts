@@ -4,6 +4,7 @@ import {
   isCashFund as checkIsCashFund,
   isDerivativesFund as checkIsDerivativesFund
 } from '@escapemint/engine'
+import { getDerivativesConfig } from './derivatives-config.js'
 
 /**
  * Computed metrics for the latest state of a fund.
@@ -59,9 +60,7 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
 
   // Handle derivatives funds separately
   if (isDerivativesFund && entries.length > 0) {
-    const contractMultiplier = config.contract_multiplier ?? 0.01
-    const maintenanceMarginRate = config.maintenance_margin_rate ?? 0.20
-    const initialMarginRate = config.initial_margin_rate ?? 0.25
+    const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = getDerivativesConfig(config)
     const derivStates = computeDerivativesEntriesState(entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
     const lastState = derivStates[derivStates.length - 1]
 
