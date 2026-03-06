@@ -50,13 +50,13 @@ Summary: 48 findings across 22 files. 2 shared utilities to extract.
 
 ### Code Quality & Style
 - [ ] **[CRITICAL]** `packages/server/src/routes/platforms.ts:998-999` — Swallowed errors in file deletion: `.catch(() => {})`. Fix: Log errors. (Simple)
-- [ ] **[CRITICAL]** `packages/web/src/components/Layout.tsx:67,70,85,94` — Swallowed API errors in Layout with only console.warn. Fix: Add toast for critical load failures. (Medium)
+- [x] **[CRITICAL]** `packages/web/src/components/Layout.tsx:67,70,85,94` — Swallowed API errors in Layout with only console.warn. Fix: Add toast for critical load failures. (Medium)
 - [ ] **[HIGH]** `packages/web/src/components/ImportWizard.tsx:912,992` — Swallowed browser cleanup: `killBrowser().catch(() => {})`. Fix: Log errors. (Simple)
-- [ ] **[HIGH]** `packages/server/src/routes/export.ts:95` — Swallowed mkdir error. Fix: Log error. (Simple)
+- [x] **[HIGH]** `packages/server/src/routes/export.ts:95` — Swallowed mkdir error. Fix: Log error. (Simple)
 - [ ] **[MEDIUM]** `packages/server/src/middleware/error-handler.ts:19-22` — Uses console.warn/error instead of structured logger. Fix: Use createLogger. (Simple)
 - [ ] **[MEDIUM]** `packages/web/src/pages/Backtest.tsx:235` — IIFE error suppression for JSON.parse. Fix: Add logging. (Simple)
 - [ ] **[MEDIUM]** `packages/web/src/pages/Settings.tsx:344-350` — Try/catch without logging parse error. Fix: Log error. (Simple)
-- [ ] **[MEDIUM]** `packages/web/src/components/ActionableFundsBanner.tsx:25-40` — Try/catch without logging. Fix: Log error. (Simple)
+- [x] **[MEDIUM]** `packages/web/src/components/ActionableFundsBanner.tsx:25-40` — Try/catch without logging. Fix: Log error. (Simple)
 - [ ] **[MEDIUM]** `packages/web/src/api/utils.ts:101-104` — Silent BTC price fetch failure. Fix: Add logging. (Simple) — NOTE: file owned by Bugs & Perf, defer this fix there
 
 ### DRY & YAGNI
@@ -74,12 +74,12 @@ Summary: 48 findings across 22 files. 2 shared utilities to extract.
 - [ ] **[CRITICAL]** `packages/server/src/services/websocket.ts:156` — Missing `await` on `sendDashboardData(client)` causing unhandled rejection. Fix: Add await. (Simple)
 - [ ] **[CRITICAL]** `packages/server/src/routes/funds.ts:66` — `.catch(next)` anti-pattern: assignment gets undefined return of next(). Fix: Use try/catch with return next(err). (Medium)
 - [ ] **[HIGH]** `packages/web/src/api/utils.ts:92-115` — Missing AbortController on external Coinbase API fetch. Fix: Add AbortController with 5s timeout. (Simple)
-- [ ] **[HIGH]** `packages/web/src/api/funds.ts:357-370` — Unbounded parallel fetch without concurrency control. Fix: Add concurrency limit or use Promise.allSettled with logging. (Medium)
+- [x] **[HIGH]** `packages/web/src/api/funds.ts:357-370` — Unbounded parallel fetch without concurrency control. Fix: Add concurrency limit or use Promise.allSettled with logging. (Medium)
 
 ### Stack-Specific (React/Node)
 - [ ] **[CRITICAL]** `packages/web/src/pages/Dashboard.tsx:577` — `window.location.href` causes full page reload. Fix: Use React Router navigate(). (Simple)
-- [ ] **[CRITICAL]** `packages/web/src/contexts/DashboardContext.tsx:158` — Stale closure: useCallback deps missing, causing WebSocket reconnect leaks. Fix: Stabilize deps. (Medium)
-- [ ] **[HIGH]** `packages/web/src/components/CreateFundModal.tsx:59-75` — Missing AbortController cleanup in useEffect fetch. Fix: Add abort signal. (Medium)
+- [x] **[CRITICAL]** `packages/web/src/contexts/DashboardContext.tsx:158` — Stale closure: useCallback deps missing, causing WebSocket reconnect leaks. Fix: Stabilize deps. (Medium)
+- [x] **[HIGH]** `packages/web/src/components/CreateFundModal.tsx:59-75` — Missing cleanup in useEffect fetch. Fix: Add cancellation flag to prevent state updates after unmount. (Medium)
 - [ ] **[HIGH]** Missing `.env.example` file. Fix: Create with documented env vars. (Simple) — new file
 
 ### Test Coverage (tracked, not auto-remediated)

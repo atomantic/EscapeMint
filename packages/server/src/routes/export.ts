@@ -5,7 +5,10 @@ import { existsSync } from 'node:fs'
 import { readAllFunds, writeFund, type FundData } from '@escapemint/storage'
 import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
 import { badRequest } from '../middleware/error-handler.js'
+import { createLogger } from '../utils/logger.js'
 import type { NextFunction, Request, Response } from 'express'
+
+const log = createLogger('export')
 
 export const exportRouter: ReturnType<typeof Router> = Router()
 
@@ -92,7 +95,9 @@ exportRouter.post('/import', async (req: Request, res: Response, next: NextFunct
   }
 
   // Ensure funds directory exists
-  await mkdir(FUNDS_DIR, { recursive: true }).catch(() => {})
+  await mkdir(FUNDS_DIR, { recursive: true }).catch((e: unknown) => {
+    log.warn(`Failed to create funds directory ${FUNDS_DIR}`, e)
+  })
 
   const results = {
     imported: 0,
