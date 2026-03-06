@@ -154,9 +154,14 @@ export async function notifyFundsChanged(): Promise<void> {
   const dashboardClients = [...clients.values()].filter(c =>
     c.subscriptions.has('dashboard')
   )
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     dashboardClients.map(client => sendDashboardData(client))
   )
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      console.warn('⚠️ sendDashboardData failed:', result.reason)
+    }
+  }
 }
 
 export function getWebSocketServer(): WebSocketServer | null {
