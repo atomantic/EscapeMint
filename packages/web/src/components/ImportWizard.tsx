@@ -909,7 +909,7 @@ export function ImportWizard({ onClose, onImported, platform: rawPlatform }: Imp
         onImported?.()
         // Clean up browser if we used it
         if (method === 'scrape') {
-          killBrowser().catch(() => {})
+          killBrowser().catch((e: unknown) => console.warn('Failed to kill browser after import:', e))
         }
         onClose()
       } else {
@@ -989,7 +989,7 @@ export function ImportWizard({ onClose, onImported, platform: rawPlatform }: Imp
   const handleClose = useCallback(() => {
     // Clean up browser if we launched it
     if (browserState !== 'idle') {
-      killBrowser().catch(() => {})
+      killBrowser().catch((e: unknown) => console.warn('Failed to kill browser on close:', e))
     }
     onClose()
   }, [browserState, onClose])

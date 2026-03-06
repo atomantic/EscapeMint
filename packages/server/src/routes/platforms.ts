@@ -20,9 +20,11 @@ import {
 
 export const platformsRouter: ReturnType<typeof Router> = Router()
 
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
-const FUNDS_DIR = join(DATA_DIR, 'funds')
+import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
+import { createLogger } from '../utils/logger.js'
+
 const BACKUPS_DIR = join(DATA_DIR, 'backups')
+const log = createLogger('platforms')
 
 /**
  * GET /platforms - List all platforms (from file + derived from funds)
@@ -995,8 +997,8 @@ platformsRouter.post('/:id/disable-cash-tracking', async (req, res, next) => {
   if (cashFund) {
     const cashFundPath = join(FUNDS_DIR, `${cashFundId}.tsv`)
     const cashConfigPath = cashFundPath.replace(/\.tsv$/, '.json')
-    await unlink(cashFundPath).catch(() => {})
-    await unlink(cashConfigPath).catch(() => {})
+    await unlink(cashFundPath).catch((e: unknown) => log.warn(`Failed to delete cash fund file ${cashFundPath}`, e))
+    await unlink(cashConfigPath).catch((e: unknown) => log.warn(`Failed to delete cash config file ${cashConfigPath}`, e))
   }
 
   // Update platform config
