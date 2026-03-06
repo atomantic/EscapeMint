@@ -582,10 +582,12 @@ export function Dashboard() {
                           event.preventDefault()
                           navigate(`/fund/${fund.id}`)
                         }
+                        if (event.key === ' ') {
+                          event.preventDefault()
+                        }
                       }}
                       onKeyUp={event => {
                         if (event.key === ' ') {
-                          event.preventDefault()
                           navigate(`/fund/${fund.id}`)
                         }
                       }}

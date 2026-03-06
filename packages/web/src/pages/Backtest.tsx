@@ -237,6 +237,7 @@ function loadStoredConfig(accumulate: boolean): ScenarioConfig {
       parsed = JSON.parse(stored)
     } catch (e) {
       console.warn('Failed to parse stored backtest config:', e)
+      localStorage.removeItem(storageKey)
     }
     if (parsed) return { ...getDefaultConfig(accumulate), ...parsed, accumulate }
   }
