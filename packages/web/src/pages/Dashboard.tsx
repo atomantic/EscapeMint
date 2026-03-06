@@ -578,7 +578,13 @@ export function Dashboard() {
                       tabIndex={0}
                       role="button"
                       onKeyDown={event => {
-                        if (event.key === 'Enter' || event.key === ' ') {
+                        if (event.key === 'Enter') {
+                          event.preventDefault()
+                          navigate(`/fund/${fund.id}`)
+                        }
+                      }}
+                      onKeyUp={event => {
+                        if (event.key === ' ') {
                           event.preventDefault()
                           navigate(`/fund/${fund.id}`)
                         }

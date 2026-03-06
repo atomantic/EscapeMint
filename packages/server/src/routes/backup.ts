@@ -121,7 +121,9 @@ backupRouter.delete('/:filename', async (req: Request<{filename: string}>, res: 
       message: 'Backup deleted successfully'
     })
   } else {
-    next(createError(result.error ?? 'Failed to delete backup', 500))
+    const errorMessage = typeof result.error === 'string' ? result.error : String(result.error ?? '')
+    const status = errorMessage.toLowerCase().includes('not found') ? 404 : 500
+    next(createError(errorMessage || 'Failed to delete backup', status))
   }
 })
 

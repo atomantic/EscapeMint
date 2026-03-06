@@ -1361,11 +1361,11 @@ const BROWSER_USER_DATA_DIR = join(process.cwd(), '.browser')
 const isLocalhostUrl = (url: string): boolean => {
   try {
     const parsed = new URL(url)
-    return (
-      parsed.hostname === 'localhost' ||
+    const isAllowedProtocol = parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    const isLocalhost = parsed.hostname === 'localhost' ||
       parsed.hostname === '127.0.0.1' ||
       parsed.hostname === '::1'
-    )
+    return isAllowedProtocol && isLocalhost
   } catch {
     // Treat malformed URLs as non-localhost
     return false
