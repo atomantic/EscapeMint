@@ -345,46 +345,51 @@ export interface AuditEntry {
 }
 
 export async function fetchAllEntries(): Promise<ApiResult<AuditEntry[]>> {
-  // Fetch all funds and flatten their entries
-  const fundsResult = await fetchFunds()
-  if (fundsResult.error) {
-    return { error: fundsResult.error }
-  }
-
-  const allEntries: AuditEntry[] = []
-
-  // Fetch details for each fund to get entries (use allSettled to handle partial failures)
-  const results = await Promise.allSettled(
-    (fundsResult.data ?? []).map(async (fundSummary) => {
-      const fundResult = await fetchFund(fundSummary.id)
-      if (fundResult.error) {
-        console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
-        return
-      }
-      if (fundResult.data) {
-        const fund = fundResult.data
-        for (const entry of fund.entries) {
-          allEntries.push({
-            fundId: fund.id,
-            platform: fund.platform,
-            ticker: fund.ticker,
-            ...entry
-          })
-        }
-      }
-    })
-  )
-
-  for (const result of results) {
-    if (result.status === 'rejected') {
-      console.warn('Fund fetch failed:', result.reason)
+  try {
+    // Fetch all funds and flatten their entries
+    const fundsResult = await fetchFunds()
+    if (fundsResult.error) {
+      return { error: fundsResult.error }
     }
+
+    const allEntries: AuditEntry[] = []
+
+    // Fetch details for each fund to get entries (use allSettled to handle partial failures)
+    const results = await Promise.allSettled(
+      (fundsResult.data ?? []).map(async (fundSummary) => {
+        const fundResult = await fetchFund(fundSummary.id)
+        if (fundResult.error) {
+          console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
+          return
+        }
+        if (fundResult.data) {
+          const fund = fundResult.data
+          for (const entry of fund.entries) {
+            allEntries.push({
+              fundId: fund.id,
+              platform: fund.platform,
+              ticker: fund.ticker,
+              ...entry
+            })
+          }
+        }
+      })
+    )
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        console.warn('Fund fetch failed:', result.reason)
+      }
+    }
+
+    // Sort by date descending
+    allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+    return { data: allEntries }
+  } catch (e: unknown) {
+    console.warn('Failed to fetch all entries:', e)
+    return { error: e instanceof Error ? e.message : 'Failed to fetch entries' }
   }
-
-  // Sort by date descending
-  allEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  return { data: allEntries }
 }
 
 // Historical time series data for charts
