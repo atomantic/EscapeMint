@@ -57,7 +57,7 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimeoutRef = useRef<number | null>(null)
   const isUnmountingRef = useRef(false)
-  const connectRef = useRef<() => void>(null)
+  const connectRef = useRef<(() => void) | null>(null)
 
   const connect = useCallback(() => {
     // Don't connect if unmounting

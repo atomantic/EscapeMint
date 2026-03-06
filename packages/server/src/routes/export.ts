@@ -96,7 +96,7 @@ exportRouter.post('/import', async (req: Request, res: Response, next: NextFunct
 
   // Ensure funds directory exists
   await mkdir(FUNDS_DIR, { recursive: true }).catch((e: unknown) => {
-    log.warn(`Failed to create funds directory ${FUNDS_DIR}: ${String(e)}`)
+    log.warn(`Failed to create funds directory ${FUNDS_DIR}`, e)
   })
 
   const results = {

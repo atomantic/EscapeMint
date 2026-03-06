@@ -73,6 +73,9 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
           }
         }
       }
+    }).catch((err: unknown) => {
+      if (cancelled) return
+      console.warn('Failed to fetch platforms', err)
     })
     return () => { cancelled = true }
   }, [])
