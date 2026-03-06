@@ -356,6 +356,10 @@ export async function fetchAllEntries(): Promise<ApiResult<AuditEntry[]>> {
   // Fetch details for each fund to get entries
   const promises = (fundsResult.data ?? []).map(async (fundSummary) => {
     const fundResult = await fetchFund(fundSummary.id)
+    if (fundResult.error) {
+      console.warn(`Failed to fetch entries for fund ${fundSummary.id}: ${fundResult.error}`)
+      return
+    }
     if (fundResult.data) {
       const fund = fundResult.data
       for (const entry of fund.entries) {

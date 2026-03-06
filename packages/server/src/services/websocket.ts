@@ -147,13 +147,13 @@ async function sendDashboardData(client: WSClient): Promise<void> {
 }
 
 // Notify all clients when fund data changes
-export function notifyFundsChanged(): void {
+export async function notifyFundsChanged(): Promise<void> {
   invalidateCache()
 
   // Re-send data to all subscribed clients
   for (const [, client] of clients) {
     if (client.subscriptions.has('dashboard')) {
-      sendDashboardData(client)
+      await sendDashboardData(client)
     }
   }
 }

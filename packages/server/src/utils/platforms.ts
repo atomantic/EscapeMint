@@ -7,8 +7,8 @@ import { join } from 'node:path'
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { v4 as uuidv4 } from 'uuid'
+import { DATA_DIR } from '../config/paths.js'
 
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
 export const PLATFORMS_FILE = join(DATA_DIR, 'platforms.json')
 
 export interface PlatformConfig {

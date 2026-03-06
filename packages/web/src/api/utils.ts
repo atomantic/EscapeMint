@@ -98,7 +98,10 @@ export async function fetchBtcPrice(): Promise<number | null> {
   if (inFlightBtcFetch) return inFlightBtcFetch
 
   inFlightBtcFetch = (async () => {
-    const response = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot').catch(() => null)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 10_000)
+    const response = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', { signal: controller.signal }).catch(() => null)
+    clearTimeout(timeout)
     if (!response?.ok) return cachedBtcPrice
     const data = await response.json().catch(() => null)
     const price = parseFloat(data?.data?.amount) || null
