@@ -158,8 +158,10 @@ export function DashboardProvider({ children }: DashboardProviderProps) {
     }
   }, [settings.testFundsMode])
 
-  // Keep ref in sync so reconnect always uses latest connect
-  connectRef.current = connect
+  // Keep ref in sync so reconnect always uses latest connect, after commit
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   // Refresh data
   const refresh = useCallback(() => {
