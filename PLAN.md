@@ -79,7 +79,7 @@ Summary: 48 findings across 22 files. 2 shared utilities to extract.
 ### Stack-Specific (React/Node)
 - [ ] **[CRITICAL]** `packages/web/src/pages/Dashboard.tsx:577` — `window.location.href` causes full page reload. Fix: Use React Router navigate(). (Simple)
 - [x] **[CRITICAL]** `packages/web/src/contexts/DashboardContext.tsx:158` — Stale closure: useCallback deps missing, causing WebSocket reconnect leaks. Fix: Stabilize deps. (Medium)
-- [x] **[HIGH]** `packages/web/src/components/CreateFundModal.tsx:59-75` — Missing AbortController cleanup in useEffect fetch. Fix: Add abort signal. (Medium)
+- [x] **[HIGH]** `packages/web/src/components/CreateFundModal.tsx:59-75` — Missing cleanup in useEffect fetch. Fix: Add cancellation flag to prevent state updates after unmount. (Medium)
 - [ ] **[HIGH]** Missing `.env.example` file. Fix: Create with documented env vars. (Simple) — new file
 
 ### Test Coverage (tracked, not auto-remediated)

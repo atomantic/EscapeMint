@@ -64,18 +64,32 @@ export function Layout() {
   // Load funds and platforms based on testFundsMode setting
   const loadFundsAndPlatforms = useCallback(() => {
     fetchFunds(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch funds:', result.error)
+        toast.error('Failed to load funds')
+        return
+      }
       if (result.data) setFunds(result.data)
     }).catch((e: unknown) => {
       console.warn('Failed to fetch funds:', e)
       toast.error('Failed to load funds')
     })
     fetchPlatforms(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch platforms:', result.error)
+        toast.error('Failed to load platforms')
+        return
+      }
       if (result.data) setPlatforms(result.data)
     }).catch((e: unknown) => {
       console.warn('Failed to fetch platforms:', e)
       toast.error('Failed to load platforms')
     })
     fetchActionableFunds(settings.testFundsMode).then(result => {
+      if (result.error) {
+        console.warn('Failed to fetch actionable funds:', result.error)
+        return
+      }
       if (result.data) {
         // Filter out dismissed funds and stock funds when market is closed
         // Market status recalculates on each data fetch, which handles day transitions

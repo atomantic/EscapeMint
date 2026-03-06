@@ -60,6 +60,11 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
     let cancelled = false
     fetchPlatforms().then(result => {
       if (cancelled) return
+      if (result.error) {
+        console.warn('Failed to fetch platforms:', result.error)
+        toast.error('Failed to load platforms')
+        return
+      }
       if (result.data) {
         setPlatforms(result.data)
         if (result.data.length === 0) {
