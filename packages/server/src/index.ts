@@ -20,8 +20,17 @@ const app: ReturnType<typeof express> = express()
 const server = createServer(app)
 const PORT = process.env['PORT'] ?? 5551
 
+const allowedOriginsEnv = process.env['ALLOWED_ORIGINS']
+const allowedOrigins =
+  allowedOriginsEnv !== undefined
+    ? allowedOriginsEnv
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0)
+    : ['http://localhost:5550', 'http://localhost:5551']
+
 app.use(cors({
-  origin: process.env['ALLOWED_ORIGINS']?.split(',') || ['http://localhost:5550', 'http://localhost:5551']
+  origin: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:5550', 'http://localhost:5551']
 }))
 app.use(express.json({ limit: '50mb' }))
 

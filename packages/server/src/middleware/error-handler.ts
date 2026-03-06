@@ -17,7 +17,7 @@ export const errorHandler: ErrorRequestHandler = (
   const statusCode = err.statusCode ?? 500
   const message = err.message || 'Internal Server Error'
 
-  // Known client errors (4xx) get single-line emoji log, unknown errors (5xx) get stack trace
+  // Known client errors (4xx) get a single-line warning, server errors (5xx) get an error log plus stack trace
   if (statusCode >= 400 && statusCode < 500) {
     log.warn(`${statusCode} ${err.code ?? 'CLIENT_ERROR'}: ${message}`)
   } else {

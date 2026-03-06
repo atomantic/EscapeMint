@@ -575,6 +575,14 @@ export function Dashboard() {
                       key={fund.id}
                       className="border-b border-slate-700/50 hover:bg-slate-700/30 active:bg-slate-700/50 cursor-pointer touch-manipulation"
                       onClick={() => navigate(`/fund/${fund.id}`)}
+                      tabIndex={0}
+                      role="button"
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          navigate(`/fund/${fund.id}`)
+                        }
+                      }}
                     >
                       <td className="px-2 xs:px-2.5 sm:px-3 py-2 xs:py-2.5 sm:py-3">
                         <span className="font-medium text-white uppercase text-[10px] xs:text-xs sm:text-sm">{fund.ticker}</span>

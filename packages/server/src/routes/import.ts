@@ -542,8 +542,8 @@ const extractSymbol = (title: string, details: Record<string, string>): string |
  * Load or create scrape archive for a platform
  */
 const sanitizePlatform = (platform: string): string => {
-  const sanitized = platform.replace(/[^a-z0-9-]/g, '')
-  if (!sanitized) throw new Error('Invalid platform name')
+  const sanitized = platform.toLowerCase().replace(/[^a-z0-9-]/g, '')
+  if (!sanitized) throw badRequest('Invalid platform name')
   return sanitized
 }
 
