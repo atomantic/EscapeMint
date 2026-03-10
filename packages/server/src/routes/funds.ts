@@ -534,8 +534,8 @@ fundsRouter.get('/history', async (req, res, next) => {
         totalCash += cash
       }
 
-      // Margin borrowed
-      if (latestEntry.margin_borrowed) {
+      // Margin borrowed (only from cash funds to avoid double-counting)
+      if (isCashFund && latestEntry.margin_borrowed) {
         totalMarginBorrowed += latestEntry.margin_borrowed
       }
 
@@ -615,6 +615,7 @@ fundsRouter.get('/history', async (req, res, next) => {
     const latest = fund.entries[fund.entries.length - 1]
     if (!latest) continue
 
+    const isCashFund = fund.config.fund_type === 'cash'
     const isDerivativesFund = fund.config.fund_type === 'derivatives'
 
     let value = latest.value
@@ -635,12 +636,14 @@ fundsRouter.get('/history', async (req, res, next) => {
     } else {
       // Cash: use entry's cash field directly
       // For cash funds, cash field = balance; for others, only count if explicitly set
-      const isCashFund = fund.config.fund_type === 'cash'
       cash = isCashFund
         ? (latest.cash ?? latest.value)
         : (latest.cash ?? 0)
     }
 
+    // Only count margin_borrowed from cash funds to avoid double-counting.
+    // margin_borrowed is tracked on both trading fund entries (per-trade amount) and
+    // cash fund entries (cumulative total). The cash fund is the authoritative source.
     currentAllocations.push({
       id: fund.id,
       ticker: fund.ticker,
@@ -649,7 +652,7 @@ fundsRouter.get('/history', async (req, res, next) => {
       cash,
       fundSize,
       marginAccess: fund.config.margin_access_usd ?? 0,
-      marginBorrowed: latest.margin_borrowed ?? 0
+      marginBorrowed: isCashFund ? (latest.margin_borrowed ?? 0) : 0
     })
 
     totalCurrentValue += value
@@ -658,7 +661,7 @@ fundsRouter.get('/history', async (req, res, next) => {
     if (fund.config.margin_access_usd) {
       totalCurrentMarginAccess += fund.config.margin_access_usd
     }
-    if (latest.margin_borrowed) {
+    if (isCashFund && latest.margin_borrowed) {
       totalCurrentMarginBorrowed += latest.margin_borrowed
     }
   }
