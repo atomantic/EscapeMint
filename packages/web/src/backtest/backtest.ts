@@ -32,6 +32,7 @@ export interface ScenarioConfig {
   marginAccessUSD: number
   marginAPR: number
   cashAPY: number
+  reinvest: boolean
 }
 
 export interface TimeSeriesPoint {
@@ -224,6 +225,12 @@ export function runBacktest(
       equity,
       point.date
     )
+
+    // When reinvest is enabled, sell proceeds/interest/dividends are available
+    // for new buys. Override the engine's computed cash with manually tracked cash.
+    if (scenario.reinvest) {
+      state.cash_available_usd = cash
+    }
 
     const rec = computeRecommendation(config, state)
 
