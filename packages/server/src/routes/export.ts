@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs'
 import { readAllFunds, writeFund, type FundData } from '@escapemint/storage'
 import { DATA_DIR, FUNDS_DIR } from '../config/paths.js'
 import { badRequest, createError } from '../middleware/error-handler.js'
+import { isTestPlatform } from '../utils/platforms.js'
 import type { NextFunction, Request, Response } from 'express'
 
 export const exportRouter: ReturnType<typeof Router> = Router()
@@ -13,8 +14,11 @@ export const exportRouter: ReturnType<typeof Router> = Router()
  * GET /export - Export all fund data as JSON
  */
 exportRouter.get('/', async (_req, res, next) => {
-  const funds = await readAllFunds(FUNDS_DIR).catch(next)
-  if (!funds) return
+  const allFunds = await readAllFunds(FUNDS_DIR).catch(next)
+  if (!allFunds) return
+
+  // Exclude test/demo funds from export
+  const funds = allFunds.filter(f => !isTestPlatform(f.platform))
 
   // Also include totals snapshot if it exists
   let totalsSnapshot = null
@@ -39,8 +43,11 @@ exportRouter.get('/', async (_req, res, next) => {
  * GET /export/download - Export as downloadable JSON file
  */
 exportRouter.get('/download', async (_req, res, next) => {
-  const funds = await readAllFunds(FUNDS_DIR).catch(next)
-  if (!funds) return
+  const allFunds = await readAllFunds(FUNDS_DIR).catch(next)
+  if (!allFunds) return
+
+  // Exclude test/demo funds from export
+  const funds = allFunds.filter(f => !isTestPlatform(f.platform))
 
   const exportData = {
     version: '1.0.0',
