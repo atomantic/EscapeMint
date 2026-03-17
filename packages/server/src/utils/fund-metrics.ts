@@ -118,10 +118,11 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
         liquidApy = Math.pow(1 + clampedLiquidPct, 365 / daysActive) - 1
       }
 
+      const isClosed = config.status === 'closed'
       return {
-        fundSize: lastState.marginBalance,
-        currentValue: lastState.equity,
-        cash: lastState.availableFunds,  // Available funds = marginBalance - marginLocked
+        fundSize: isClosed ? 0 : lastState.marginBalance,
+        currentValue: isClosed ? 0 : lastState.equity,
+        cash: isClosed ? 0 : lastState.availableFunds,  // Available funds = marginBalance - marginLocked
         totalInvested: lastState.costBasis,
         sumDividends: 0,
         sumExpenses: lastState.sumFees,
