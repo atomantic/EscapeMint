@@ -1122,6 +1122,29 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
       markPrice,
       initialMarginRate
     )
+
+    // Override closedMetrics for derivatives using engine values
+    // computeClosedFundMetrics only looks at BUY/SELL trades, missing funding/interest/rebates/fees
+    if (closedMetrics && derivativesEntriesState && derivativesEntriesState.length > 0) {
+      const lastDeriv = derivativesEntriesState[derivativesEntriesState.length - 1]!
+      const derivLiquidPnl = lastDeriv.realizedPnl + lastDeriv.unrealizedPnl +
+        lastDeriv.sumFunding + lastDeriv.sumInterest + lastDeriv.sumRebates
+      const capitalBase = lastDeriv.marginBalance - derivLiquidPnl
+      const denominator = capitalBase > 0 ? capitalBase : lastDeriv.marginBalance
+      const returnPct = denominator > 0 ? derivLiquidPnl / denominator : 0
+      const clampedReturnPct = Math.max(-0.99, returnPct)
+      const apy = closedMetrics.duration_days > 3
+        ? Math.pow(1 + clampedReturnPct, 365 / closedMetrics.duration_days) - 1
+        : clampedReturnPct
+      closedMetrics = {
+        ...closedMetrics,
+        total_expenses_usd: lastDeriv.sumFees,
+        total_cash_interest_usd: lastDeriv.sumInterest,
+        net_gain_usd: derivLiquidPnl,
+        return_pct: returnPct,
+        apy
+      }
+    }
   }
 
   res.json({
