@@ -450,7 +450,7 @@ export function BacktestView({ config, historicalData, dateRange, onChange, onAp
                 onChange={(e) => updateConfig({ reinvest: e.target.checked })}
                 className="w-3 h-3 rounded accent-blue-500"
               />
-              <span className="text-[10px] text-slate-400">Re-invest proceeds</span>
+              <span className="text-[10px] text-slate-400">Reinvest sell proceeds, interest, and dividends</span>
             </label>
             <div className="mt-2">
               <span className="text-[10px] text-slate-500 block mb-1">Presets</span>
