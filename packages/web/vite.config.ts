@@ -21,7 +21,12 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/d3')) return 'd3'
-          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom') || id.includes('node_modules/react/')) return 'vendor'
+          if (
+            id.includes('node_modules/react-dom') ||
+            id.includes('node_modules/react-router-dom') ||
+            id.includes('node_modules/react-router') ||
+            id.includes('node_modules/react/')
+          ) return 'vendor'
         }
       }
     }

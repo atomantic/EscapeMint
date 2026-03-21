@@ -1125,11 +1125,17 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
 
     // Override closedMetrics for derivatives using engine values
     // computeClosedFundMetrics only looks at BUY/SELL trades, missing funding/interest/rebates/fees
+    // Derive all fields from derivatives entries for internal consistency
     if (closedMetrics && derivativesEntriesState && derivativesEntriesState.length > 0) {
       const lastDeriv = derivativesEntriesState[derivativesEntriesState.length - 1]!
+      const totalDeposited = fund.entries
+        .filter(e => e.action === 'DEPOSIT')
+        .reduce((sum, e) => sum + (e.amount ?? 0), 0)
+      const totalWithdrawn = fund.entries
+        .filter(e => e.action === 'WITHDRAW')
+        .reduce((sum, e) => sum + (e.amount ?? 0), 0)
       const derivLiquidPnl = lastDeriv.realizedPnl + lastDeriv.unrealizedPnl
-      const capitalBase = lastDeriv.marginBalance - derivLiquidPnl
-      const denominator = capitalBase > 0 ? capitalBase : lastDeriv.marginBalance
+      const denominator = totalDeposited > 0 ? totalDeposited : lastDeriv.marginBalance
       const returnPct = denominator > 0 ? derivLiquidPnl / denominator : 0
       const clampedReturnPct = Math.max(-0.99, returnPct)
       const apy = closedMetrics.duration_days > 3
@@ -1137,6 +1143,9 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
         : clampedReturnPct
       closedMetrics = {
         ...closedMetrics,
+        total_invested_usd: totalDeposited,
+        total_returned_usd: totalWithdrawn,
+        total_dividends_usd: lastDeriv.sumFunding + lastDeriv.sumRebates,
         total_expenses_usd: lastDeriv.sumFees,
         total_cash_interest_usd: lastDeriv.sumInterest,
         net_gain_usd: derivLiquidPnl,
