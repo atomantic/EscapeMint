@@ -1516,6 +1516,7 @@ fundsRouter.post('/:id/entries', async (req, res, next) => {
       )
       let invested = 0
       let sumShares = 0
+      const isAccumulate = fund.config.accumulate === true
       for (const e of allEntries) {
         if (e.date > entry.date) break // Only consider entries up to this one
         // Track shares for liquidation detection
@@ -1526,12 +1527,15 @@ fundsRouter.post('/:id/entries', async (req, res, next) => {
         if (e.action === 'BUY' && e.amount) {
           invested += e.amount
         } else if (e.action === 'SELL' && e.amount) {
-          invested -= e.amount
-          // Check for full liquidation
           const hasShareTracking = e.shares !== undefined && e.shares !== 0
-          const isFullLiquidation = hasShareTracking
-            ? Math.abs(sumShares) < 0.0001
-            : (e.value !== undefined && e.value > 0 && e.value <= e.amount + 0.01)
+          const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
+          const valueLiquidated = e.value !== undefined && e.value > 0 && e.value <= e.amount + 0.01
+          const isFullLiquidation = sharesLiquidated || valueLiquidated
+
+          // In accumulate mode, partial sells are profit extraction (don't reduce invested)
+          if (!isAccumulate || isFullLiquidation) {
+            invested -= e.amount
+          }
           if (isFullLiquidation) {
             invested = 0
             sumShares = 0
@@ -2381,8 +2385,11 @@ fundsRouter.post('/:id/recalculate', async (req, res, next) => {
       entry.value = Math.round(sumShares * entry.price * 100) / 100
     }
 
-    // Check for full liquidation (sumShares should be ~0 after a full sell)
-    const isFullLiquidation = entry.action === 'SELL' && Math.abs(sumShares) < 0.0001
+    // Check for full liquidation (use OR — either condition triggers)
+    const hasShareTracking = entry.shares !== undefined && entry.shares !== 0
+    const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
+    const valueLiquidated = entry.value !== undefined && entry.value > 0 && entry.value <= (entry.amount ?? 0) + 0.01
+    const isFullLiquidation = entry.action === 'SELL' && (sharesLiquidated || valueLiquidated)
 
     // Track action amounts
     if (entry.action === 'BUY' && entry.amount) {

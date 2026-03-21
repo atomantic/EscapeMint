@@ -278,10 +278,29 @@ export async function deleteBackup(backupDir: string, filename: string): Promise
 }
 
 /**
+ * Normalize backup data from Swift app format to web format.
+ * Handles: "exported" → "backup_date", version 1 → "1.0.0", missing optional fields.
+ */
+export function normalizeBackupData(data: Record<string, unknown>): void {
+  if (!data.backup_date && data.exported) {
+    data.backup_date = data.exported
+  }
+  if (data.version === 1) {
+    data.version = '1.0.0'
+  }
+  if (data.scrape_archives === undefined) {
+    data.scrape_archives = {}
+  }
+}
+
+/**
  * Validate backup data structure.
  */
 function validateBackupData(data: unknown): data is BackupData {
   if (!data || typeof data !== 'object') return false
+
+  // Normalize Swift app format before validation
+  normalizeBackupData(data as Record<string, unknown>)
 
   const backup = data as Partial<BackupData>
 

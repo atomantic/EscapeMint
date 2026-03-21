@@ -223,6 +223,7 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
         costBasis = 0
         totalBuys = 0
         totalSells = 0
+        sumShares = 0
         // Freeze active days on full liquidation
         if (cycleStartDate) {
           const cycleDays = Math.max(0,
