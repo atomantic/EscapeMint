@@ -1127,8 +1127,7 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
     // computeClosedFundMetrics only looks at BUY/SELL trades, missing funding/interest/rebates/fees
     if (closedMetrics && derivativesEntriesState && derivativesEntriesState.length > 0) {
       const lastDeriv = derivativesEntriesState[derivativesEntriesState.length - 1]!
-      const derivLiquidPnl = lastDeriv.realizedPnl + lastDeriv.unrealizedPnl +
-        lastDeriv.sumFunding + lastDeriv.sumInterest + lastDeriv.sumRebates
+      const derivLiquidPnl = lastDeriv.realizedPnl + lastDeriv.unrealizedPnl
       const capitalBase = lastDeriv.marginBalance - derivLiquidPnl
       const denominator = capitalBase > 0 ? capitalBase : lastDeriv.marginBalance
       const returnPct = denominator > 0 ? derivLiquidPnl / denominator : 0
