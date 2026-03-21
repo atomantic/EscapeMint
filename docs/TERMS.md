@@ -1,7 +1,7 @@
 # Terms of Use
 
-**Effective Date:** March 15, 2026
-**Last Updated:** March 15, 2026
+**Effective Date:** March 19, 2026
+**Last Updated:** March 19, 2026
 
 ## Acceptance of Terms
 

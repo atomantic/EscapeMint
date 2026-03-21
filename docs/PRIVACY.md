@@ -1,7 +1,7 @@
 # Privacy Policy
 
-**Effective Date:** March 15, 2026
-**Last Updated:** March 15, 2026
+**Effective Date:** March 19, 2026
+**Last Updated:** March 19, 2026
 
 ## Overview
 
@@ -13,7 +13,7 @@ EscapeMint does **not** collect, transmit, or store any personal data on externa
 
 - **No analytics or tracking** -- We do not use any analytics frameworks, crash reporting services, or tracking pixels.
 - **No account creation** -- There is no sign-up, login, or user account system.
-- **No network requests** -- The app does not send your data to any server. All computation happens on your device.
+- **No external network requests** -- The app does not send your data to any external servers or off your device. All computation happens on your device; any HTTP requests are limited to local, on-device components.
 - **No advertising** -- There are no ads and no ad-related data collection.
 
 ## Data Storage
