@@ -73,9 +73,10 @@ export function round2(value: number): number {
 }
 
 /**
- * Check if a platform is a test platform.
- * Test platforms have IDs starting with 'test' (e.g., 'test', 'test-plat', 'test-cash').
+ * Check if a platform is a test/demo platform.
+ * Test platforms have IDs starting with 'test' (e.g., 'test', 'test-plat', 'test-cash')
+ * or 'demo' (e.g., 'demo', used by the iOS app's test data generator).
  */
 export function isTestPlatform(platform: string): boolean {
-  return platform.startsWith('test')
+  return platform.startsWith('test') || platform.startsWith('demo')
 }

@@ -32,6 +32,7 @@ export interface ScenarioConfig {
   marginAccessUSD: number
   marginAPR: number
   cashAPY: number
+  reinvest: boolean
 }
 
 export interface TimeSeriesPoint {
@@ -187,7 +188,9 @@ export function runBacktest(
 
     const weeklyInterest = i > 0 ? cash * weeklyInterestRate : 0
     sumCashInterest += weeklyInterest
-    cash += weeklyInterest
+    if (scenario.reinvest) {
+      cash += weeklyInterest
+    }
 
     let weeklyDividend = 0
     if (i > 0 && (spxlEquivShares > 0 || vtiEquivShares > 0 || brgnxEquivShares > 0 || tqqqEquivShares > 0 || gldEquivShares > 0 || slvEquivShares > 0)) {
@@ -205,7 +208,9 @@ export function runBacktest(
       for (const div of gldDivs) weeklyDividend += gldEquivShares * div.amount
       for (const div of slvDivs) weeklyDividend += slvEquivShares * div.amount
 
-      cash += weeklyDividend
+      if (scenario.reinvest) {
+        cash += weeklyDividend
+      }
       sumDividends += weeklyDividend
     }
 
@@ -224,6 +229,12 @@ export function runBacktest(
       equity,
       point.date
     )
+
+    // Override the engine's computed cash with manually tracked cash.
+    // When reinvest is enabled, cash includes sell proceeds/interest/dividends.
+    // When reinvest is disabled, cash only contains initial capital minus purchases,
+    // so proceeds are effectively extracted from the fund.
+    state.cash_available_usd = cash
 
     const rec = computeRecommendation(config, state)
 
@@ -267,8 +278,11 @@ export function runBacktest(
         const sharesToSell = sellAmount / point.value
         const sellProportion = sharesToSell / shares
         shares = Math.max(0, shares - sharesToSell)
-        cash += sellAmount
-        totalExtracted += sellAmount
+        if (scenario.reinvest) {
+          cash += sellAmount
+        } else {
+          totalExtracted += sellAmount
+        }
 
         spxlEquivShares *= (1 - sellProportion)
         vtiEquivShares *= (1 - sellProportion)

@@ -26,9 +26,8 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       // Bundle everything (no external dependencies)
       output: {
-        manualChunks: {
-          // Separate vendor chunk for better caching
-          vendor: ['react', 'react-dom', 'd3']
+        manualChunks(id) {
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/') || id.includes('node_modules/d3')) return 'vendor'
         }
       }
     }

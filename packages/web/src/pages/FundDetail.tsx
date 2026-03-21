@@ -386,6 +386,7 @@ export function FundDetail() {
           totalBuys = 0
           totalSells = 0
           sumSellProceeds = 0
+          sumShares = 0
           // Freeze active days on full liquidation
           if (cycleStartDate) {
             cumulativeActiveDays += Math.max(0, (entryDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -412,10 +413,10 @@ export function FundDetail() {
       // Cap at 0 - can't have negative invested
       const netInvested = Math.max(0, totalBuys - totalSells)
 
-      // For non-cash managing funds in harvest mode, fund_size = invested amount
-      // In accumulate mode, don't override — netInvested grows forever since sells
-      // don't reduce totalSells, so the entry's tracked fund_size is more meaningful
-      if (!manageCash && !isCashFundType && !isAccumulate) {
+      // For non-cash managing funds, fund_size = invested amount
+      // This is always correct regardless of accumulate mode since netInvested
+      // already accounts for accumulate (partial sells don't reduce totalSells)
+      if (!manageCash && !isCashFundType) {
         fundSize = netInvested
       }
 

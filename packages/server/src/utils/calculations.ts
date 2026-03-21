@@ -63,10 +63,10 @@ export function calculateStartInputWithLiquidation(
     if (entry.action === 'BUY' && entry.amount) {
       totalBuys += entry.amount
     } else if (entry.action === 'SELL' && entry.amount) {
-      // Check for full liquidation
-      const isFullLiquidation = hasShareTracking
-        ? Math.abs(sumShares) < 0.0001
-        : (entry.value ?? 0) <= entry.amount + 0.01
+      // Check for full liquidation (use OR — either condition triggers)
+      const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
+      const valueLiquidated = (entry.value ?? 0) > 0 && (entry.value ?? 0) <= entry.amount + 0.01
+      const isFullLiquidation = sharesLiquidated || valueLiquidated
 
       if (isFullLiquidation) {
         // Reset on full liquidation

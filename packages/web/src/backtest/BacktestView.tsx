@@ -442,8 +442,16 @@ export function BacktestView({ config, historicalData, dateRange, onChange, onAp
               {config.accumulate
                 ? 'Sell min DCA amount when over target + min profit.'
                 : 'Close entire position to cash when over target + min profit.'}
-              {' '}All proceeds stay in fund cash pool.
             </p>
+            <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={config.reinvest}
+                onChange={(e) => updateConfig({ reinvest: e.target.checked })}
+                className="w-3 h-3 rounded accent-blue-500"
+              />
+              <span className="text-[10px] text-slate-400">Reinvest sell proceeds, interest, and dividends</span>
+            </label>
             <div className="mt-2">
               <span className="text-[10px] text-slate-500 block mb-1">Presets</span>
               <div className="grid grid-cols-5 gap-1">

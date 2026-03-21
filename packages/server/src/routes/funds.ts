@@ -534,8 +534,8 @@ fundsRouter.get('/history', async (req, res, next) => {
         totalCash += cash
       }
 
-      // Margin borrowed
-      if (latestEntry.margin_borrowed) {
+      // Margin borrowed (only from cash funds to avoid double-counting)
+      if (isCashFund && latestEntry.margin_borrowed) {
         totalMarginBorrowed += latestEntry.margin_borrowed
       }
 
@@ -615,6 +615,7 @@ fundsRouter.get('/history', async (req, res, next) => {
     const latest = fund.entries[fund.entries.length - 1]
     if (!latest) continue
 
+    const isCashFund = fund.config.fund_type === 'cash'
     const isDerivativesFund = fund.config.fund_type === 'derivatives'
 
     let value = latest.value
@@ -635,12 +636,14 @@ fundsRouter.get('/history', async (req, res, next) => {
     } else {
       // Cash: use entry's cash field directly
       // For cash funds, cash field = balance; for others, only count if explicitly set
-      const isCashFund = fund.config.fund_type === 'cash'
       cash = isCashFund
         ? (latest.cash ?? latest.value)
         : (latest.cash ?? 0)
     }
 
+    // Only count margin_borrowed from cash funds to avoid double-counting.
+    // margin_borrowed is tracked on both trading fund entries (per-trade amount) and
+    // cash fund entries (cumulative total). The cash fund is the authoritative source.
     currentAllocations.push({
       id: fund.id,
       ticker: fund.ticker,
@@ -649,7 +652,7 @@ fundsRouter.get('/history', async (req, res, next) => {
       cash,
       fundSize,
       marginAccess: fund.config.margin_access_usd ?? 0,
-      marginBorrowed: latest.margin_borrowed ?? 0
+      marginBorrowed: isCashFund ? (latest.margin_borrowed ?? 0) : 0
     })
 
     totalCurrentValue += value
@@ -658,7 +661,7 @@ fundsRouter.get('/history', async (req, res, next) => {
     if (fund.config.margin_access_usd) {
       totalCurrentMarginAccess += fund.config.margin_access_usd
     }
-    if (latest.margin_borrowed) {
+    if (isCashFund && latest.margin_borrowed) {
       totalCurrentMarginBorrowed += latest.margin_borrowed
     }
   }
@@ -1119,6 +1122,37 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
       markPrice,
       initialMarginRate
     )
+
+    // Override closedMetrics for derivatives using engine values
+    // computeClosedFundMetrics only looks at BUY/SELL trades, missing funding/interest/rebates/fees
+    // Derive all fields from derivatives entries for internal consistency
+    if (closedMetrics && derivativesEntriesState && derivativesEntriesState.length > 0) {
+      const lastDeriv = derivativesEntriesState[derivativesEntriesState.length - 1]!
+      const totalDeposited = fund.entries
+        .filter(e => e.action === 'DEPOSIT')
+        .reduce((sum, e) => sum + (e.amount ?? 0), 0)
+      const totalWithdrawn = fund.entries
+        .filter(e => e.action === 'WITHDRAW')
+        .reduce((sum, e) => sum + (e.amount ?? 0), 0)
+      const derivLiquidPnl = lastDeriv.realizedPnl + lastDeriv.unrealizedPnl
+      const denominator = totalDeposited > 0 ? totalDeposited : lastDeriv.marginBalance
+      const returnPct = denominator > 0 ? derivLiquidPnl / denominator : 0
+      const clampedReturnPct = Math.max(-0.99, returnPct)
+      const apy = closedMetrics.duration_days > 3
+        ? Math.pow(1 + clampedReturnPct, 365 / closedMetrics.duration_days) - 1
+        : clampedReturnPct
+      closedMetrics = {
+        ...closedMetrics,
+        total_invested_usd: totalDeposited,
+        total_returned_usd: totalWithdrawn,
+        total_dividends_usd: lastDeriv.sumFunding + lastDeriv.sumRebates,
+        total_expenses_usd: lastDeriv.sumFees,
+        total_cash_interest_usd: lastDeriv.sumInterest,
+        net_gain_usd: derivLiquidPnl,
+        return_pct: returnPct,
+        apy
+      }
+    }
   }
 
   res.json({
@@ -1490,6 +1524,7 @@ fundsRouter.post('/:id/entries', async (req, res, next) => {
       )
       let invested = 0
       let sumShares = 0
+      const isAccumulate = fund.config.accumulate === true
       for (const e of allEntries) {
         if (e.date > entry.date) break // Only consider entries up to this one
         // Track shares for liquidation detection
@@ -1500,12 +1535,15 @@ fundsRouter.post('/:id/entries', async (req, res, next) => {
         if (e.action === 'BUY' && e.amount) {
           invested += e.amount
         } else if (e.action === 'SELL' && e.amount) {
-          invested -= e.amount
-          // Check for full liquidation
           const hasShareTracking = e.shares !== undefined && e.shares !== 0
-          const isFullLiquidation = hasShareTracking
-            ? Math.abs(sumShares) < 0.0001
-            : (e.value !== undefined && e.value > 0 && e.value <= e.amount + 0.01)
+          const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
+          const valueLiquidated = e.value !== undefined && e.value > 0 && e.value <= e.amount + 0.01
+          const isFullLiquidation = sharesLiquidated || valueLiquidated
+
+          // In accumulate mode, partial sells are profit extraction (don't reduce invested)
+          if (!isAccumulate || isFullLiquidation) {
+            invested -= e.amount
+          }
           if (isFullLiquidation) {
             invested = 0
             sumShares = 0
@@ -2355,8 +2393,11 @@ fundsRouter.post('/:id/recalculate', async (req, res, next) => {
       entry.value = Math.round(sumShares * entry.price * 100) / 100
     }
 
-    // Check for full liquidation (sumShares should be ~0 after a full sell)
-    const isFullLiquidation = entry.action === 'SELL' && Math.abs(sumShares) < 0.0001
+    // Check for full liquidation (use OR — either condition triggers)
+    const hasShareTracking = entry.shares !== undefined && entry.shares !== 0
+    const sharesLiquidated = hasShareTracking && Math.abs(sumShares) < 0.0001
+    const valueLiquidated = entry.value !== undefined && entry.value > 0 && entry.value <= (entry.amount ?? 0) + 0.01
+    const isFullLiquidation = entry.action === 'SELL' && (sharesLiquidated || valueLiquidated)
 
     // Track action amounts
     if (entry.action === 'BUY' && entry.amount) {

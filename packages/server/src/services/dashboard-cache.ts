@@ -730,7 +730,7 @@ function computeHistory(funds: FundData[]): DashboardHistory {
       cash,
       fundSize,
       marginAccess: fund.config.margin_access_usd ?? 0,
-      marginBorrowed: latest.margin_borrowed ?? 0
+      marginBorrowed: isCashFund ? (latest.margin_borrowed ?? 0) : 0
     })
   }
 

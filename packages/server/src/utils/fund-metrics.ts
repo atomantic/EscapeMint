@@ -118,10 +118,11 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
         liquidApy = Math.pow(1 + clampedLiquidPct, 365 / daysActive) - 1
       }
 
+      const isClosed = config.status === 'closed'
       return {
-        fundSize: lastState.marginBalance,
-        currentValue: lastState.equity,
-        cash: lastState.availableFunds,  // Available funds = marginBalance - marginLocked
+        fundSize: isClosed ? 0 : lastState.marginBalance,
+        currentValue: isClosed ? 0 : lastState.equity,
+        cash: isClosed ? 0 : lastState.availableFunds,  // Available funds = marginBalance - marginLocked
         totalInvested: lastState.costBasis,
         sumDividends: 0,
         sumExpenses: lastState.sumFees,
@@ -222,6 +223,7 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
         costBasis = 0
         totalBuys = 0
         totalSells = 0
+        sumShares = 0
         // Freeze active days on full liquidation
         if (cycleStartDate) {
           const cycleDays = Math.max(0,
@@ -302,15 +304,10 @@ export function computeFundFinalMetrics(fund: FundData): FundComputedMetrics {
     fundSize = latestEntry?.fund_size ?? cash
     currentValue = cash
   } else {
-    // For trading funds with manage_cash=false:
-    //   Harvest mode: fundSize = netInvested (buys - sells = capital still deployed)
-    //   Accumulate mode: use entry's fund_size (netInvested grows forever since sells
-    //     don't reduce totalSells in accumulate mode, making it meaningless as fund size)
-    // For trading funds with manage_cash=true, use entry's fund_size or config
+    // For trading funds: prefer tracked fund_size from latest entry when available,
+    // fall back to netInvested (no manage_cash) or config fund_size_usd (manage_cash)
     if (!manageCash) {
-      fundSize = isAccumulate
-        ? (latestEntry?.fund_size ?? netInvested)
-        : netInvested
+      fundSize = latestEntry?.fund_size ?? netInvested
     } else {
       fundSize = latestEntry?.fund_size ?? config.fund_size_usd
     }

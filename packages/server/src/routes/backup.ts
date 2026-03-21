@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createBackup, listBackups, getDefaultBackupDir, restoreBackup, readBackup, deleteBackup, writeBackup } from '@escapemint/storage'
+import { createBackup, listBackups, getDefaultBackupDir, restoreBackup, readBackup, deleteBackup, writeBackup, normalizeBackupData } from '@escapemint/storage'
 import { DATA_DIR } from '../config/paths.js'
 import { badRequest, createError, notFound } from '../middleware/error-handler.js'
 import type { NextFunction, Request, Response } from 'express'
@@ -132,6 +132,11 @@ backupRouter.delete('/:filename', async (req: Request<{filename: string}>, res: 
  */
 backupRouter.post('/upload', async (req: Request, res: Response, next: NextFunction) => {
   const backupData = req.body
+
+  // Normalize Swift app backup format before validation
+  if (backupData && typeof backupData === 'object') {
+    normalizeBackupData(backupData as Record<string, unknown>)
+  }
 
   // Basic validation
   if (!backupData || !backupData.backup_date || !backupData.funds || !backupData.version) {
