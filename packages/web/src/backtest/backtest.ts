@@ -280,8 +280,9 @@ export function runBacktest(
         shares = Math.max(0, shares - sharesToSell)
         if (scenario.reinvest) {
           cash += sellAmount
+        } else {
+          totalExtracted += sellAmount
         }
-        totalExtracted += sellAmount
 
         spxlEquivShares *= (1 - sellProportion)
         vtiEquivShares *= (1 - sellProportion)
