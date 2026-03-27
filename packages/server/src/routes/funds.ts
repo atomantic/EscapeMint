@@ -32,11 +32,10 @@ import { notFound, badRequest } from '../middleware/error-handler.js'
 import { computeFundFinalMetrics } from '../utils/fund-metrics.js'
 import { parseLocalDate } from '../utils/calculations.js'
 import { readPlatformsData, writePlatformsData, isTestPlatform } from '../utils/platforms.js'
+import { FUNDS_DIR } from '../config/paths.js'
+import { getDerivativesConfig } from '../utils/derivatives-config.js'
 
 export const fundsRouter: ReturnType<typeof Router> = Router()
-
-const DATA_DIR = process.env['DATA_DIR'] ?? './data'
-const FUNDS_DIR = join(DATA_DIR, 'funds')
 
 /**
  * Computes the post-action equity value for an entry.
@@ -88,9 +87,7 @@ fundsRouter.get('/', async (req, res, next) => {
       latestEquity = { date: latest.date, value: latestEntry.cash }
     } else if (isDerivativesFund && f.entries.length > 0) {
       // For derivatives funds, compute the derivatives state to get equity and margin
-      const contractMultiplier = f.config.contract_multiplier ?? 0.01
-      const maintenanceMarginRate = f.config.maintenance_margin_rate ?? 0.20
-      const initialMarginRate = f.config.initial_margin_rate ?? 0.25
+      const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = getDerivativesConfig(f.config)
       const derivStates = computeDerivativesEntriesState(f.entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
       const lastState = derivStates[derivStates.length - 1]
       if (lastState) {
@@ -153,9 +150,7 @@ fundsRouter.get('/aggregate', async (req, res, next) => {
     let state = null
     if (isDerivativesFund && fund.entries.length > 0) {
       // For derivatives, compute derivatives state and map to FundState-compatible object
-      const contractMultiplier = fund.config.contract_multiplier ?? 0.01
-      const maintenanceMarginRate = fund.config.maintenance_margin_rate ?? 0.20
-      const initialMarginRate = fund.config.initial_margin_rate ?? 0.25
+      const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = getDerivativesConfig(fund.config)
       const derivStates = computeDerivativesEntriesState(fund.entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
       const lastState = derivStates[derivStates.length - 1]
 
@@ -337,9 +332,7 @@ fundsRouter.get('/history', async (req, res, next) => {
   const derivativesStateByFund = new Map<string, Map<string, { equity: number, costBasis: number, marginBalance: number, availableFunds: number, realizedPnl: number, unrealizedPnl: number, sumInterest: number }>>()
   for (const fund of funds) {
     if (fund.config.fund_type === 'derivatives' && fund.entries.length > 0) {
-      const contractMultiplier = fund.config.contract_multiplier ?? 0.01
-      const maintenanceMarginRate = fund.config.maintenance_margin_rate ?? 0.20
-      const initialMarginRate = fund.config.initial_margin_rate ?? 0.25
+      const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = getDerivativesConfig(fund.config)
       const derivStates = computeDerivativesEntriesState(fund.entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
       const dateMap = new Map<string, { equity: number, costBasis: number, marginBalance: number, availableFunds: number, realizedPnl: number, unrealizedPnl: number, sumInterest: number }>()
       for (const entry of derivStates) {
@@ -902,13 +895,12 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
 
   const manageCash = fund.config.manage_cash ?? true
   const isDerivativesFund = fund.config.fund_type === 'derivatives'
+  const derivConfig = isDerivativesFund ? getDerivativesConfig(fund.config) : null
 
   // For derivatives funds, compute state differently (don't use computeFundState)
   let state
   if (isDerivativesFund) {
-    const contractMultiplier = fund.config.contract_multiplier ?? 0.01
-    const maintenanceMarginRate = fund.config.maintenance_margin_rate ?? 0.20
-    const initialMarginRate = fund.config.initial_margin_rate ?? 0.25
+    const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = derivConfig!
     const derivStates = computeDerivativesEntriesState(fund.entries, contractMultiplier, maintenanceMarginRate, undefined, initialMarginRate)
     const lastState = derivStates[derivStates.length - 1]
 
@@ -1108,9 +1100,7 @@ fundsRouter.get('/:id/state', async (req, res, next) => {
   let derivativesEntriesState = null
 
   if (isDerivativesFund) {
-    const contractMultiplier = fund.config.contract_multiplier ?? 0.01
-    const maintenanceMarginRate = fund.config.maintenance_margin_rate ?? 0.20
-    const initialMarginRate = fund.config.initial_margin_rate ?? 0.25
+    const { contractMultiplier, maintenanceMarginRate, initialMarginRate } = derivConfig!
 
     // Unrealized P&L is calculated at each entry using the BTC price at that snapshot
     // (derived from the trade price: btcPrice = contractPrice / contractMultiplier)
