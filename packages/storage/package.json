@@ -23,7 +23,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.5.2",
     "@types/proper-lockfile": "^4.1.4",
     "@vitest/coverage-v8": "^4.1.2",
     "typescript": "^5.9.3",
