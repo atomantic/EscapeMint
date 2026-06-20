@@ -15,7 +15,7 @@
   "dependencies": {
     "@escapemint/engine": "*",
     "@escapemint/storage": "*",
-    "archiver": "^7.0.1",
+    "archiver": "^8.0.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "playwright": "^1.59.1",
@@ -25,7 +25,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/archiver": "^7.0.0",
+    "@types/archiver": "^8.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/supertest": "^7.2.0",
