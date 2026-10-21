@@ -12,9 +12,9 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       // Import engine directly (zero deps, browser-compatible)
-      '@escapemint/engine': resolve(__dirname, '../packages/engine/src/index.ts'),
+      '@escapemint/engine': resolve(import.meta.dirname, '../packages/engine/src/index.ts'),
       // Import shared components from web package
-      '~web': resolve(__dirname, '../packages/web/src')
+      '~web': resolve(import.meta.dirname, '../packages/web/src')
     }
   },
 
