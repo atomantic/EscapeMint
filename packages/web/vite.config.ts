@@ -11,9 +11,9 @@ export default defineConfig({
   resolve: {
     alias: {
       // Allow backtest page to import engine directly
-      '@escapemint/engine': resolve(__dirname, '../engine/src/index.ts'),
+      '@escapemint/engine': resolve(import.meta.dirname, '../engine/src/index.ts'),
       // Allow pages to import from web package
-      '~web': resolve(__dirname, './src')
+      '~web': resolve(import.meta.dirname, './src')
     }
   },
   build: {
