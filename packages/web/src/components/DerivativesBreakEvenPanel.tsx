@@ -123,7 +123,7 @@ export function DerivativesBreakEvenPanel({
     const newLiq = (newCostBasis - effectiveCash) / (newNotionalSize * mmFactor)
 
     return { maxContracts, newNetBE, newPositionBE, newPosition, newLiq }
-  }, [targetPrice, targetLiq, metrics, contractMultiplier, maintenanceMarginRate, netDeposits])
+  }, [targetPrice, targetLiq, metrics, isLongPosition, contractMultiplier, maintenanceMarginRate, netDeposits])
 
   if (!latestEntry || !metrics) return null
 
