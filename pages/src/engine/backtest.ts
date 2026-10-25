@@ -14,6 +14,10 @@ export interface ScenarioConfig {
   btcPct: number
   gldPct: number
   slvPct: number
+  /** Optional. Existing scenarios leave these at 0. */
+  qqqPct?: number
+  soxxPct?: number
+  soxlPct?: number
 
   // DCA strategy
   initialCash: number
@@ -112,7 +116,10 @@ export function runBacktest(
     TQQQ: scenario.tqqqPct / 100,
     BTC: scenario.btcPct / 100,
     GLD: scenario.gldPct / 100,
-    SLV: scenario.slvPct / 100
+    SLV: scenario.slvPct / 100,
+    QQQ: (scenario.qqqPct ?? 0) / 100,
+    SOXX: (scenario.soxxPct ?? 0) / 100,
+    SOXL: (scenario.soxlPct ?? 0) / 100
   }
 
   const blendResult = blendPricesWithDividends(historicalData, allocation, dateRange)

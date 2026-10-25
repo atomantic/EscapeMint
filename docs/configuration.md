@@ -240,6 +240,62 @@ Annual interest rate on margin borrowing.
 - Used to calculate margin interest costs
 - Higher rates make margin less attractive
 
+## 1x Fallback
+
+Optional protection for a daily-reset leveraged fund (TQQQ, SOXL, SPXL). **Off unless `fallback_enabled` is true.** Existing funds and every default recommendation are unchanged. The rule never borrows and never sells shares you already hold. It only changes where the next buy goes.
+
+Leave margin off while this rule is on. The two do not combine, and the app does not turn margin on for you.
+
+### fallback_enabled
+
+```json
+"fallback_enabled": false
+```
+
+| Value | Behavior |
+|-------|----------|
+| omitted or `false` | Buys stay on this fund |
+| `true` | New buys can route to `fallback_ticker` |
+
+### fallback_drawdown_pct
+
+How far down the fund must be before new buys leave it. A positive fraction. `0.60` means down 60% from the running peak or from cost basis, whichever is worse. Defaults to `0.60`.
+
+```json
+"fallback_drawdown_pct": 0.60
+```
+
+### fallback_ma_days
+
+Length of the underlying moving average, in trading days. Defaults to `200`. New buys go to the 1x ticker when the latest underlying close is below that average. Buys come back to the leveraged fund only after the drawdown has healed **and** the underlying has closed back at or above the average.
+
+```json
+"fallback_ma_days": 200
+```
+
+The live fund page applies the drawdown test from the fund's own cost basis. The moving-average test runs when underlying closes are supplied (the path backtests). This app does not fetch a live underlying series for the fund page.
+
+### fallback_ticker
+
+Ticker that receives the routed buy.
+
+```json
+"fallback_ticker": "QQQ"
+```
+
+| Leveraged fund | 1x ticker |
+|----------------|-----------|
+| TQQQ | QQQ |
+| SOXL | SOXX |
+| SPXL | SPY (VOO is the same S&P 500 exposure) |
+
+```json
+"fallback_enabled": true,
+"fallback_drawdown_pct": 0.60,
+"fallback_ma_days": 200,
+"fallback_ticker": "QQQ"
+```
+
 ## Metadata
 
 ### audited

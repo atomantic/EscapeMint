@@ -36,6 +36,9 @@ export interface Allocation {
   BTC: number
   GLD: number
   SLV: number
+  QQQ?: number
+  SOXX?: number
+  SOXL?: number
 }
 
 export interface BlendedPriceResult {
@@ -48,6 +51,9 @@ export interface BlendedPriceResult {
     BTC: number
     GLD: number
     SLV: number
+    QQQ: number
+    SOXX: number
+    SOXL: number
   }
   dividends: {
     SPXL: DividendPayment[]
@@ -71,6 +77,9 @@ export function blendPricesWithDividends(
   const btc = historicalData['BTC']!.prices
   const gld = historicalData['GLD']!.prices
   const slv = historicalData['SLV']!.prices
+  const qqq = historicalData['QQQ']?.prices ?? []
+  const soxx = historicalData['SOXX']?.prices ?? []
+  const soxl = historicalData['SOXL']?.prices ?? []
 
   const spxlMap = new Map(spxl.map(p => [p.date, p.value]))
   const vtiLookup = buildPriceMap(vti)
@@ -79,6 +88,9 @@ export function blendPricesWithDividends(
   const btcMap = new Map(btc.map(p => [p.date, p.value]))
   const gldMap = new Map(gld.map(p => [p.date, p.value]))
   const slvMap = new Map(slv.map(p => [p.date, p.value]))
+  const qqqMap = new Map(qqq.map(p => [p.date, p.value]))
+  const soxxMap = new Map(soxx.map(p => [p.date, p.value]))
+  const soxlMap = new Map(soxl.map(p => [p.date, p.value]))
 
   const dates = spxl
     .map(p => p.date)
@@ -87,7 +99,7 @@ export function blendPricesWithDividends(
   if (dates.length === 0) {
     return {
       prices: [],
-      startingPrices: { SPXL: 1, VTI: 1, BRGNX: 1, TQQQ: 1, BTC: 1, GLD: 1, SLV: 1 },
+      startingPrices: { SPXL: 1, VTI: 1, BRGNX: 1, TQQQ: 1, BTC: 1, GLD: 1, SLV: 1, QQQ: 1, SOXX: 1, SOXL: 1 },
       dividends: { SPXL: [], VTI: [], BRGNX: [], TQQQ: [], GLD: [], SLV: [] }
     }
   }
@@ -100,6 +112,9 @@ export function blendPricesWithDividends(
   const btcStart = btcMap.get(firstDate) || 1
   const gldStart = gldMap.get(firstDate) || 1
   const slvStart = slvMap.get(firstDate) || 1
+  const qqqStart = qqqMap.get(firstDate) || 1
+  const soxxStart = soxxMap.get(firstDate) || 1
+  const soxlStart = soxlMap.get(firstDate) || 1
 
   const spxlDividends = (historicalData['SPXL']!.dividends || [])
     .filter(d => d.exDate >= dateRange.start && d.exDate <= dateRange.end)
@@ -122,6 +137,9 @@ export function blendPricesWithDividends(
     const btcNorm = ((btcMap.get(date) || 0) / btcStart) * 100
     const gldNorm = ((gldMap.get(date) || 0) / gldStart) * 100
     const slvNorm = ((slvMap.get(date) || 0) / slvStart) * 100
+    const qqqNorm = ((qqqMap.get(date) || 0) / qqqStart) * 100
+    const soxxNorm = ((soxxMap.get(date) || 0) / soxxStart) * 100
+    const soxlNorm = ((soxlMap.get(date) || 0) / soxlStart) * 100
 
     const blendedValue =
       (spxlNorm * allocation.SPXL) +
@@ -130,7 +148,10 @@ export function blendPricesWithDividends(
       (tqqqNorm * allocation.TQQQ) +
       (btcNorm * allocation.BTC) +
       (gldNorm * allocation.GLD) +
-      (slvNorm * allocation.SLV)
+      (slvNorm * allocation.SLV) +
+      (qqqNorm * (allocation.QQQ ?? 0)) +
+      (soxxNorm * (allocation.SOXX ?? 0)) +
+      (soxlNorm * (allocation.SOXL ?? 0))
 
     return { date, value: blendedValue }
   })
@@ -144,7 +165,10 @@ export function blendPricesWithDividends(
       TQQQ: tqqqStart,
       BTC: btcStart,
       GLD: gldStart,
-      SLV: slvStart
+      SLV: slvStart,
+      QQQ: qqqStart,
+      SOXX: soxxStart,
+      SOXL: soxlStart
     },
     dividends: {
       SPXL: spxlDividends,

@@ -1,4 +1,18 @@
+import { evaluateFallback } from './leverage-fallback.js'
 import type { SubFundConfig, Recommendation, FundState } from './types.js'
+
+/**
+ * Optional market context for the 1x fallback rule.
+ * Omit it, or leave the rule disabled, and recommendations are unchanged.
+ * Drawdown versus cost basis is read from fund state. Peak drawdown and the
+ * moving average are used only when this context supplies them.
+ */
+export interface FallbackContext {
+  /** Positive fraction the leveraged price is below its running peak. */
+  drawdownFromPeak?: number
+  /** Underlying closes, oldest first, including the latest close. */
+  underlyingCloses?: readonly number[]
+}
 
 /**
  * Determines the action amount (limit) based on fund performance.
@@ -45,7 +59,8 @@ export function computeLimit(config: SubFundConfig, state: FundState): number {
  */
 export function computeRecommendation(
   config: SubFundConfig,
-  state: FundState
+  state: FundState,
+  fallbackContext?: FallbackContext
 ): Recommendation | null {
   // Cash funds don't need trading recommendations - only DEPOSIT/WITHDRAW
   if (config.fund_type === 'cash') {
@@ -73,7 +88,7 @@ export function computeRecommendation(
   if (start_input_usd === 0 && actual_value_usd === 0) {
     // For non-cash managed funds, always use full limit (no cash pool to check)
     const buyAmount = hasCashPool ? Math.min(limit, cash_available_usd) : limit
-    return {
+    return routeBuyIfFallback(config, state, fallbackContext, {
       action: 'BUY',
       amount: buyAmount,
       explanation: {
@@ -88,7 +103,7 @@ export function computeRecommendation(
         reasoning: `Initial DCA purchase of $${buyAmount.toFixed(2)}.`
       },
       insufficient_cash: hasCashPool && cash_available_usd < limit
-    }
+    })
   }
 
   // Above target by more than min_profit AND actually in profit: SELL
@@ -158,7 +173,7 @@ export function computeRecommendation(
     reasoning += ` Insufficient cash: only $${cash_available_usd.toFixed(2)} available.`
   }
 
-  return {
+  return routeBuyIfFallback(config, state, fallbackContext, {
     action: 'BUY',
     amount: buyAmount,
     explanation: {
@@ -173,5 +188,62 @@ export function computeRecommendation(
       reasoning
     },
     insufficient_cash: insufficient
+  })
+}
+
+/**
+ * When the fallback rule is enabled and a trigger is live, point the buy at
+ * the 1x ticker. Dollar amount, action, and every disabled-rule result stay
+ * as they were. This never adds margin.
+ */
+function routeBuyIfFallback(
+  config: SubFundConfig,
+  state: FundState,
+  context: FallbackContext | undefined,
+  recommendation: Recommendation
+): Recommendation {
+  if (!config.fallback_enabled || recommendation.action !== 'BUY') return recommendation
+  const ticker = config.fallback_ticker?.trim().toUpperCase()
+  if (!ticker) return recommendation
+
+  const fromCost = state.gain_pct < 0 ? -state.gain_pct : 0
+  const decision = evaluateFallback(
+    {
+      enabled: true,
+      fallbackTicker: ticker,
+      ...(config.fallback_drawdown_pct !== undefined
+        ? { drawdownThreshold: config.fallback_drawdown_pct }
+        : {}),
+      ...(config.fallback_ma_days !== undefined ? { maDays: config.fallback_ma_days } : {})
+    },
+    {
+      drawdownFromCost: fromCost,
+      ...(context?.drawdownFromPeak !== undefined
+        ? { drawdownFromPeak: context.drawdownFromPeak }
+        : {}),
+      ...(context?.underlyingCloses !== undefined
+        ? { underlyingCloses: context.underlyingCloses }
+        : {})
+    }
+  )
+  if (!decision.active || !decision.routeTicker) return recommendation
+
+  const parts: string[] = []
+  if (decision.reason === 'drawdown' || decision.reason === 'drawdown_and_below_ma') {
+    const threshold = (config.fallback_drawdown_pct ?? 0.6) * 100
+    parts.push(`down ${(decision.drawdown * 100).toFixed(1)}% (threshold ${threshold.toFixed(0)}%)`)
+  }
+  if (decision.reason === 'below_ma' || decision.reason === 'drawdown_and_below_ma') {
+    const days = config.fallback_ma_days ?? 200
+    parts.push(`underlying is below its ${days}-day average`)
+  }
+  const why = parts.join(' and ')
+  return {
+    ...recommendation,
+    route_ticker: decision.routeTicker,
+    explanation: {
+      ...recommendation.explanation,
+      reasoning: `${recommendation.explanation.reasoning} 1x fallback is active (${why}). Buy ${decision.routeTicker} instead of the leveraged fund. Do not use margin.`
+    }
   }
 }

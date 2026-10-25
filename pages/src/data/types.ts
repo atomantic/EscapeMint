@@ -17,6 +17,8 @@ export interface HistoricalData {
   dataPoints: number
   prices: PricePoint[]
   dividends?: DividendPayment[]  // Optional dividend data (stocks only)
+  /** Where the prices came from, when the file records it. */
+  source?: string
 }
 
 export interface DateRange {

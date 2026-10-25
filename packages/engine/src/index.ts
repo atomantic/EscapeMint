@@ -21,6 +21,35 @@ export {
 } from './derivatives-calculations.js'
 export type { DerivativesEntryState } from './derivatives-calculations.js'
 export { computeLimit, computeRecommendation } from './recommendation.js'
+export type { FallbackContext } from './recommendation.js'
+export {
+  DEFAULT_FALLBACK_DRAWDOWN,
+  DEFAULT_FALLBACK_MA_DAYS,
+  DEFAULT_LEVERAGE,
+  DEFAULT_LEVERAGE_EXPENSE_RATIO,
+  TRADING_DAYS_PER_YEAR,
+  LEVERAGED_FALLBACK_TICKERS,
+  defaultFallbackTicker,
+  simpleMovingAverage,
+  evaluateFallback,
+  maxDrawdown,
+  syntheticLeveragedPrices,
+  roundTripRemainder
+} from './leverage-fallback.js'
+export type {
+  FallbackRuleConfig,
+  FallbackObservation,
+  FallbackReason,
+  FallbackDecision
+} from './leverage-fallback.js'
+export { xirr, compareLeveragePaths } from './leverage-path.js'
+export type {
+  PathCashFlow,
+  PathStrategyResult,
+  LeveragePathComparison,
+  LeveragePathInput,
+  ScaledBuyingTiers
+} from './leverage-path.js'
 export { formatCurrency, formatPercent, summarizeFundState } from './explainer.js'
 export {
   getFundStartDate,

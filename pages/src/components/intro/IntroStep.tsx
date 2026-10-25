@@ -6,6 +6,7 @@ import { TraditionalDCAChart } from './charts/TraditionalDCAChart'
 import { BuySellZones } from './charts/BuySellZones'
 import { LeverageComparison } from './charts/LeverageComparison'
 import { ModeComparison } from './charts/ModeComparison'
+import { PathRiskChart } from './charts/PathRiskChart'
 
 interface IntroStepProps {
   step: IntroStepType
@@ -26,6 +27,8 @@ export function IntroStep({ step }: IntroStepProps) {
         return <LeverageComparison />
       case 'modes':
         return <ModeComparison />
+      case 'pathRisk':
+        return <PathRiskChart />
       case 'none':
       default:
         return null
