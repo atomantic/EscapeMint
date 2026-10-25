@@ -22,6 +22,9 @@ function getDefaultAccumulateConfig(): ScenarioConfig {
     btcPct: 70,
     gldPct: 5,
     slvPct: 5,
+    qqqPct: 0,
+    soxxPct: 0,
+    soxlPct: 0,
     initialCash: 10000,
     weeklyDCA: 100,
     targetAPY: 0.25,
@@ -48,6 +51,9 @@ function getDefaultHarvestConfig(): ScenarioConfig {
     btcPct: 70,
     gldPct: 5,
     slvPct: 5,
+    qqqPct: 0,
+    soxxPct: 0,
+    soxlPct: 0,
     initialCash: 10000,
     weeklyDCA: 100,
     targetAPY: 0.40,
@@ -64,7 +70,7 @@ function getDefaultHarvestConfig(): ScenarioConfig {
 }
 
 // Preset configurations for each mode
-export type PresetName = 'TQQQ' | 'SPXL' | 'VTI' | 'BRGNX' | 'BTC' | 'GLD' | 'SLV' | 'Blend'
+export type PresetName = 'TQQQ' | 'SPXL' | 'VTI' | 'BRGNX' | 'BTC' | 'GLD' | 'SLV' | 'QQQ' | 'SOXX' | 'SOXL' | 'Blend'
 
 export interface Preset {
   name: PresetName
@@ -84,6 +90,9 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 0,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: accumulate ? 0.20 : 0.52,
       inputMin: 100,
       inputMid: 100,
@@ -101,6 +110,9 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 0,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: 0.10,
       inputMin: 100,
       inputMid: 100,
@@ -118,6 +130,9 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 0,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: 0.10,
       inputMin: 100,
       inputMid: 100,
@@ -135,6 +150,9 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 0,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: 0.10,
       inputMin: 100,
       inputMid: 100,
@@ -152,6 +170,9 @@ export const PRESETS: Preset[] = [
       btcPct: 100,
       gldPct: 0,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: accumulate ? 0.30 : 0.80,
       inputMin: 100,
       inputMid: 100,
@@ -169,6 +190,9 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 100,
       slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: 0.08,
       inputMin: 100,
       inputMid: 100,
@@ -186,10 +210,74 @@ export const PRESETS: Preset[] = [
       btcPct: 0,
       gldPct: 0,
       slvPct: 100,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 0,
       targetAPY: 0.10,
       inputMin: 100,
       inputMid: 100,
       inputMax: accumulate ? 100 : 150
+    })
+  },
+
+  {
+    name: 'QQQ',
+    label: 'QQQ',
+    getConfig: (accumulate, _base) => ({
+      spxlPct: 0,
+      vtiPct: 0,
+      brgnxPct: 0,
+      tqqqPct: 0,
+      btcPct: 0,
+      gldPct: 0,
+      slvPct: 0,
+      qqqPct: 100,
+      soxxPct: 0,
+      soxlPct: 0,
+      targetAPY: 0.10,
+      inputMin: 100,
+      inputMid: 100,
+      inputMax: accumulate ? 100 : 150
+    })
+  },
+  {
+    name: 'SOXX',
+    label: 'SOXX',
+    getConfig: (accumulate, _base) => ({
+      spxlPct: 0,
+      vtiPct: 0,
+      brgnxPct: 0,
+      tqqqPct: 0,
+      btcPct: 0,
+      gldPct: 0,
+      slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 100,
+      soxlPct: 0,
+      targetAPY: 0.10,
+      inputMin: 100,
+      inputMid: 100,
+      inputMax: accumulate ? 100 : 150
+    })
+  },
+  {
+    name: 'SOXL',
+    label: 'SOXL',
+    getConfig: (accumulate, _base) => ({
+      spxlPct: 0,
+      vtiPct: 0,
+      brgnxPct: 0,
+      tqqqPct: 0,
+      btcPct: 0,
+      gldPct: 0,
+      slvPct: 0,
+      qqqPct: 0,
+      soxxPct: 0,
+      soxlPct: 100,
+      targetAPY: accumulate ? 0.20 : 0.40,
+      inputMin: 100,
+      inputMid: 100,
+      inputMax: accumulate ? 100 : 250
     })
   },
   {
@@ -205,6 +293,9 @@ export const PRESETS: Preset[] = [
         btcPct: defaults.btcPct,
         gldPct: defaults.gldPct,
         slvPct: defaults.slvPct,
+        qqqPct: defaults.qqqPct ?? 0,
+        soxxPct: defaults.soxxPct ?? 0,
+        soxlPct: defaults.soxlPct ?? 0,
         targetAPY: defaults.targetAPY,
         inputMin: defaults.inputMin,
         inputMid: defaults.inputMid,

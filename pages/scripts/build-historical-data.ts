@@ -29,7 +29,11 @@ interface HistoricalData {
   dataPoints: number
   prices: PricePoint[]
   dividends?: DividendPayment[]
+  source?: string
 }
+
+const YAHOO_SESSION_CLOSE_SOURCE =
+  'Yahoo Finance chart API (query1.finance.yahoo.com/v8/finance/chart), session close. Retrieved 2026-10-25.'
 
 async function loadOHLCVData(jsonPath: string): Promise<PricePoint[]> {
   const content = await readFile(jsonPath, 'utf-8')
@@ -234,6 +238,33 @@ async function buildHistoricalData() {
     JSON.stringify(slvData, null, 2)
   )
   console.log(`✓ SLV: ${slvData.dataPoints} points (${slvData.startDate} to ${slvData.endDate})`)
+
+  const priceOnly = [
+    { file: 'qqq-weekly.json', ticker: 'QQQ', name: 'Invesco QQQ Trust' },
+    { file: 'soxx-weekly.json', ticker: 'SOXX', name: 'iShares Semiconductor ETF' },
+    { file: 'soxl-weekly.json', ticker: 'SOXL', name: 'Direxion Daily Semiconductor Bull 3X Shares' }
+  ]
+  for (const spec of priceOnly) {
+    console.log(`Processing ${spec.ticker} data from server weekly data...`)
+    const prices = await loadOHLCVData(resolve(serverDataDir, spec.file))
+    const first = prices[0]
+    const last = prices[prices.length - 1]
+    if (!first || !last) throw new Error(`No valid ${spec.ticker} data found`)
+    const data: HistoricalData = {
+      ticker: spec.ticker,
+      name: spec.name,
+      type: 'stock',
+      startDate: first.date,
+      endDate: last.date,
+      dataPoints: prices.length,
+      prices,
+      source: YAHOO_SESSION_CLOSE_SOURCE
+    }
+    const body = JSON.stringify(data, null, 2)
+    await writeFile(resolve(outputDir, spec.file), body)
+    await writeFile(resolve(__dirname, '../../packages/web/public/data', spec.file), body)
+    console.log(`✓ ${spec.ticker}: ${data.dataPoints} points (${data.startDate} to ${data.endDate})`)
+  }
 
   console.log('\n✓ Historical data built successfully!')
 }

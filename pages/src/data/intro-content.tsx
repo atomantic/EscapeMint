@@ -4,7 +4,7 @@ export interface IntroStep {
   id: number
   title: string
   content: ReactNode[]
-  chartType: 'growth' | 'volatility' | 'traditionalDca' | 'buySell' | 'leverage' | 'modes' | 'none'
+  chartType: 'growth' | 'volatility' | 'traditionalDca' | 'buySell' | 'leverage' | 'modes' | 'pathRisk' | 'none'
   showDisclaimer?: boolean
 }
 
@@ -121,6 +121,25 @@ export const INTRO_STEPS: IntroStep[] = [
   },
   {
     id: 11,
+    title: 'A Slow Bear Can Wipe Out a 3x Fund',
+    content: [
+      'A daily-reset 3x fund multiplies today\'s index move by three, then starts over tomorrow. It does not multiply the long-run return by three.',
+      'Volatility decay is the quiet cost. A day up 10% and a day down 10% leaves the index at 99 cents on the dollar. The same round trip leaves a 3x fund at 91 cents, before fees.',
+      'The risk that shows up in the record is a slow bear. Ordinary down days compound. A synthetic Nasdaq-100 3x built from real daily closes (Yahoo Finance ^NDX, 10 Mar 1999–31 Dec 2012, 0.9%/year expense) fell 99.97% from its peak, bottoming on 9 Mar 2009. The worst day in that sample was about −10.5% (29 Sep 2008). A semiconductor 3x built from the PHLX Semiconductor Index (^SOX, 4 Jan 1999–31 Dec 2012) fell 99.999% and finished at about 0.002% of its peak. After a collapse like that an issuer can close the fund or reverse-split it, so the rebound dip-buying was waiting for never arrives. That is the case the fallback is built for.',
+      'A day down about a third (3 × −33% ≈ −100%) would zero a 3x fund while the stocks behind it still had about two thirds of their value. That is a stress test, not a likely day. From 1975 through Oct 2026 the S&P 500\'s worst session is −20.5% on 19 Oct 1987, about −61% for a 3x fund. The Nasdaq-100\'s worst close since 1985 is −15.1% that same day, then −12.2% on 16 Mar 2020. The semiconductor index\'s worst day since 1994 is −15.9% on 16 Mar 2020. The Russell 1000\'s worst day in the series since 1992 is −12.2%, also 16 Mar 2020. Yahoo Finance session closes. None of those days is −33%.',
+      'Market-wide circuit breakers date from October 1988. Since 4 Feb 2013, a 20% drop in the S&P 500 — Level 3 — halts trading for the rest of the day. From 1988 until that change the all-day halt was a 30% drop in the Dow, and a 20% drop was a shorter halt. A −33% close is outside both the record and the current halt.',
+      'The chart is that slow bear, with the same cash on three paths and no borrowing: $10,000 on the first session, then $100 every five trading days ($79,500 by the end of 2012).',
+      '• 3x only finished at $98,635. Money-weighted return 2.7%/year. Time-weighted return −23%/year. Max drawdown 98.9%.',
+      '• 1x fallback finished at $100,976. Money-weighted return 3.0%/year. Max drawdown 97.2%. New buys went to QQQ once the 3x fund was down 60% or ^NDX closed under its 200-day average ($63,600 of the contributions).',
+      '• VTI buy-and-hold, same deposits, finished at $100,925. Money-weighted return 3.0%/year. Max drawdown 51.0%. The benchmark uses VTSMX until VTI closes begin on 15 Jun 2001.',
+      'On this Nasdaq path, ending wealth is almost a tie. VTI finishes a few dollars behind the fallback, not ahead of it, and a little ahead of 3x-only. The gap that matters is the drawdown: 51% for VTI, about 99% for both leveraged paths. Later deposits clawed the 3x account back by 2012 because the synthetic fund never quite hit zero. If the issuer closes it once it is 99% off its peak, 3x-only ends at $60,446 and the fallback still ends at $101,475, just above VTI.',
+      'The semiconductor path is where VTI pulls ahead of both. Same rule, ^SOX standing in for SOXX (the ETF listed in July 2001): 3x only $22,394, fallback $60,819, VTI $102,555, on $80,400 contributed. Max drawdowns 99.8%, 98.7%, and 51.1%. VTI ends ahead, with about half the drawdown.',
+      'The fallback is optional and off unless you turn it on. Threshold and moving-average length are configurable (defaults: 60% and 200 days). It routes the next buy — TQQQ to QQQ, SOXL to SOXX, SPXL to SPY or VOO — and sends new buys back to the 3x fund only after the drawdown has healed and the underlying has closed back above its average. It does not sell shares you already hold, and it does not use margin. The one-day stress test still takes an existing 3x position to zero. The rule only changes where the next dollar goes.'
+    ],
+    chartType: 'pathRisk'
+  },
+  {
+    id: 12,
     title: 'What This System Is NOT',
     content: [
       'This is NOT for:',
@@ -133,7 +152,7 @@ export const INTRO_STEPS: IntroStep[] = [
     chartType: 'none'
   },
   {
-    id: 12,
+    id: 13,
     title: 'Your Personal Configuration',
     content: [
       'You control:',
@@ -146,7 +165,7 @@ export const INTRO_STEPS: IntroStep[] = [
     chartType: 'none'
   },
   {
-    id: 13,
+    id: 14,
     title: 'Get Started',
     content: [
       'Ready to simulate your first fund?',

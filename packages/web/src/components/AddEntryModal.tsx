@@ -136,6 +136,15 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
 
   // Apply recommendation to form (shared logic for manual and auto-apply)
   const applyRecommendation = useCallback((rec: Recommendation | null | undefined) => {
+    // A routed buy belongs on the 1x fund. Never record it as a buy here.
+    if (rec?.route_ticker) {
+      setFormData(prev => ({
+        ...prev,
+        action: 'HOLD',
+        amount: ''
+      }))
+      return
+    }
     if (rec) {
       setFormData(prev => ({
         ...prev,
@@ -155,7 +164,9 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
   const useRecommendation = useCallback(() => {
     const rec = preview?.recommendation
     applyRecommendation(rec)
-    if (rec) {
+    if (rec?.route_ticker) {
+      toast.success(`Buy ${rec.route_ticker} on that fund. This entry stays HOLD. Do not use margin.`)
+    } else if (rec) {
       toast.success(`Applied: ${rec.action} ${formatCurrency(rec.amount)}`)
     } else {
       toast.success('Applied: HOLD')
@@ -324,10 +335,19 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
             }`}>
               <p className="text-sm text-slate-300 mb-1">Next Recommended Action</p>
               <p className={`text-2xl font-bold ${
-                result.recommendation.action === 'BUY' ? 'text-blue-400' : 'text-orange-400'
+                result.recommendation.route_ticker
+                  ? 'text-amber-400'
+                  : result.recommendation.action === 'BUY' ? 'text-blue-400' : 'text-orange-400'
               }`}>
-                {result.recommendation.action} {formatCurrency(result.recommendation.amount)}
+                {result.recommendation.route_ticker
+                  ? `BUY ${result.recommendation.route_ticker} ${formatCurrency(result.recommendation.amount)}`
+                  : `${result.recommendation.action} ${formatCurrency(result.recommendation.amount)}`}
               </p>
+              {result.recommendation.route_ticker && (
+                <p className="text-xs text-amber-300 mt-1">
+                  Record that buy on {result.recommendation.route_ticker}. Do not buy more of this fund, and do not use margin.
+                </p>
+              )}
               <p className="text-xs text-slate-400 mt-2">{result.recommendation.explanation.reasoning}</p>
               {result.recommendation.insufficient_cash && (
                 <p className="text-xs text-yellow-400 mt-1">Note: Insufficient cash available</p>
@@ -393,10 +413,19 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
                     <div>
                       <p className="text-xs text-slate-400">Recommended Action</p>
                       <p className={`font-semibold ${
-                        displayRec.action === 'BUY' ? 'text-blue-400' : 'text-orange-400'
+                        displayRec.route_ticker
+                          ? 'text-amber-400'
+                          : displayRec.action === 'BUY' ? 'text-blue-400' : 'text-orange-400'
                       }`}>
-                        {displayRec.action} {formatCurrency(displayRec.amount)}
+                        {displayRec.route_ticker
+                          ? `BUY ${displayRec.route_ticker} ${formatCurrency(displayRec.amount)}`
+                          : `${displayRec.action} ${formatCurrency(displayRec.amount)}`}
                       </p>
+                      {displayRec.route_ticker && (
+                        <p className="text-xs text-amber-300 mt-1">
+                          Record that buy on the {displayRec.route_ticker} fund. This {fundTicker.toUpperCase()} entry stays HOLD. Do not use margin.
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
@@ -463,7 +492,7 @@ export function AddEntryModal({ fundId, fundTicker, currentRecommendation, exist
                 {displayRec.explanation?.reasoning && (
                   <p className="mt-2 text-xs text-slate-400 italic">{displayRec.explanation.reasoning}</p>
                 )}
-                {displayRec.insufficient_cash && displayRec.action === 'BUY' && (
+                {displayRec.insufficient_cash && displayRec.action === 'BUY' && !displayRec.route_ticker && (
                   <div className="mt-2 pt-2 border-t border-slate-700">
                     <p className="text-xs text-yellow-400 mb-2">
                       Insufficient cash ({formatCurrency(displayState?.cash_available_usd ?? 0)} available, need {formatCurrency(displayRec.explanation?.limit_usd ?? displayRec.amount)})

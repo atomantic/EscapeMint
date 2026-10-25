@@ -244,6 +244,9 @@ function isPresetActive(config: ScenarioConfig, preset: Preset): boolean {
     config.btcPct === presetValues.btcPct &&
     config.gldPct === presetValues.gldPct &&
     config.slvPct === presetValues.slvPct &&
+    (config.qqqPct ?? 0) === (presetValues.qqqPct ?? 0) &&
+    (config.soxxPct ?? 0) === (presetValues.soxxPct ?? 0) &&
+    (config.soxlPct ?? 0) === (presetValues.soxlPct ?? 0) &&
     config.vtiPct === presetValues.vtiPct &&
     config.targetAPY === presetValues.targetAPY &&
     config.inputMin === presetValues.inputMin &&
@@ -321,9 +324,10 @@ export function BacktestView({ config, historicalData, dateRange, onChange, onAp
               btcPct={config.btcPct}
               gldPct={config.gldPct}
               slvPct={config.slvPct}
-              onChange={(spxlPct, vtiPct, brgnxPct, tqqqPct, btcPct, gldPct, slvPct) =>
-                updateConfig({ spxlPct, vtiPct, brgnxPct, tqqqPct, btcPct, gldPct, slvPct })
-              }
+              qqqPct={config.qqqPct ?? 0}
+              soxxPct={config.soxxPct ?? 0}
+              soxlPct={config.soxlPct ?? 0}
+              onChange={(allocation) => updateConfig(allocation)}
             />
           </div>
 

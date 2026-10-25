@@ -44,6 +44,18 @@ export interface FundConfig {
   accumulate: boolean
   manage_cash?: boolean
   margin_enabled?: boolean
+  /**
+   * Route new buys to a 1x ticker while a daily-reset fund is deeply down
+   * or its underlying is below a moving average. Absent or false leaves
+   * recommendations unchanged.
+   */
+  fallback_enabled?: boolean
+  /** Positive fraction. 0.60 means down 60%. Defaults to 0.60 when enabled. */
+  fallback_drawdown_pct?: number
+  /** Underlying moving-average length in trading days. Defaults to 200. */
+  fallback_ma_days?: number
+  /** Ticker that receives new buys while the fallback is active (QQQ, SOXX, SPY, VOO). */
+  fallback_ticker?: string
   dividend_reinvest?: boolean
   interest_reinvest?: boolean
   expense_from_fund?: boolean
@@ -141,6 +153,8 @@ export interface Recommendation {
     reasoning: string
   }
   insufficient_cash?: boolean
+  /** Set when a buy should be placed on the 1x fund instead of this one. */
+  route_ticker?: string
 }
 
 export interface FundDetail {

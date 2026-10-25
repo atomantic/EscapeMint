@@ -1213,15 +1213,21 @@ export function FundDetail() {
                 {state?.recommendation && features.allowsRecommendations && (
                   <span
                     className={`px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] leading-tight font-bold rounded ${
-                      state.recommendation.action === 'BUY'
+                      state.recommendation.route_ticker
+                        ? 'bg-amber-900/50 text-amber-300 border border-amber-700'
+                        : state.recommendation.action === 'BUY'
                         ? 'bg-green-900/50 text-green-300 border border-green-700'
                         : state.recommendation.action === 'HOLD'
                         ? 'bg-slate-700/50 text-slate-300 border border-slate-600'
                         : 'bg-orange-900/50 text-orange-300 border border-orange-700'
                     }`}
-                    title={`Cash: ${formatCurrency(state.cash_available ?? 0)}${state.cash_source ? ` (from ${state.cash_source})` : ''}${fund.config.margin_enabled && state.margin_available ? ` | Margin: ${formatCurrency(state.margin_available)}` : ''}`}
+                    title={state.recommendation.route_ticker
+                      ? `Buy ${state.recommendation.route_ticker} instead. ${state.recommendation.explanation.reasoning}`
+                      : `Cash: ${formatCurrency(state.cash_available ?? 0)}${state.cash_source ? ` (from ${state.cash_source})` : ''}${fund.config.margin_enabled && state.margin_available ? ` | Margin: ${formatCurrency(state.margin_available)}` : ''}`}
                   >
-                    {state.recommendation.action === 'HOLD' ? 'HOLD' : `${state.recommendation.action} ${formatCurrency(state.recommendation.amount)}`}
+                    {state.recommendation.route_ticker
+                      ? `BUY ${state.recommendation.route_ticker} ${formatCurrency(state.recommendation.amount)}`
+                      : state.recommendation.action === 'HOLD' ? 'HOLD' : `${state.recommendation.action} ${formatCurrency(state.recommendation.amount)}`}
                   </span>
                 )}
                 {/* Cash/Margin Available */}
@@ -1268,6 +1274,14 @@ export function FundDetail() {
                     <span title="Mode" className="whitespace-nowrap">
                       <span className="text-slate-500 hidden sm:inline">Mode: </span><span className={fund.config.accumulate ? 'text-blue-300' : 'text-orange-300'}>{fund.config.accumulate ? 'Accumulate' : 'Harvest'}</span>
                     </span>
+                    {fund.config.fallback_enabled && fund.config.fallback_ticker && (
+                      <>
+                        <span className="text-slate-600 hidden sm:inline">|</span>
+                        <span title="New buys route to this ticker while the fallback rule is active" className="whitespace-nowrap">
+                          <span className="text-slate-500 hidden sm:inline">Fallback: </span><span className="text-amber-300">{fund.config.fallback_ticker}</span>
+                        </span>
+                      </>
+                    )}
                     <span className="text-slate-600 hidden sm:inline">|</span>
                     <span title="Fund Size" className="whitespace-nowrap">
                       <span className="text-slate-500 hidden sm:inline">Size: </span><span className="text-white font-medium">{formatCurrency(latestEntry?.fundSize ?? fund.config.fund_size_usd)}</span>

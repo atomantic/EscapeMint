@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-interface Props {
+export interface PieAllocation {
   spxlPct: number
   vtiPct: number
   brgnxPct: number
@@ -8,18 +8,53 @@ interface Props {
   btcPct: number
   gldPct: number
   slvPct: number
-  onChange: (spxlPct: number, vtiPct: number, brgnxPct: number, tqqqPct: number, btcPct: number, gldPct: number, slvPct: number) => void
+  qqqPct: number
+  soxxPct: number
+  soxlPct: number
 }
 
-type AssetKey = 'SPXL' | 'VTI' | 'BRGNX' | 'TQQQ' | 'BTC' | 'GLD' | 'SLV'
+interface Props extends PieAllocation {
+  onChange: (allocation: PieAllocation) => void
+}
 
-export function PieBuilder({ spxlPct, vtiPct, brgnxPct, tqqqPct, btcPct, gldPct, slvPct, onChange }: Props) {
-  const total = spxlPct + vtiPct + brgnxPct + tqqqPct + btcPct + gldPct + slvPct
+const ASSETS = [
+  { key: 'SPXL', field: 'spxlPct', color: '#3b82f6' },
+  { key: 'VTI', field: 'vtiPct', color: '#8b5cf6' },
+  { key: 'BRGNX', field: 'brgnxPct', color: '#06b6d4' },
+  { key: 'TQQQ', field: 'tqqqPct', color: '#22c55e' },
+  { key: 'QQQ', field: 'qqqPct', color: '#38bdf8' },
+  { key: 'SOXL', field: 'soxlPct', color: '#fb7185' },
+  { key: 'SOXX', field: 'soxxPct', color: '#a78bfa' },
+  { key: 'BTC', field: 'btcPct', color: '#f97316' },
+  { key: 'GLD', field: 'gldPct', color: '#eab308' },
+  { key: 'SLV', field: 'slvPct', color: '#94a3b8' }
+] as const
+
+type AssetKey = (typeof ASSETS)[number]['key']
+
+export function PieBuilder(props: Props) {
+  const { onChange } = props
+  const values: Record<AssetKey, number> = {
+    SPXL: props.spxlPct,
+    VTI: props.vtiPct,
+    BRGNX: props.brgnxPct,
+    TQQQ: props.tqqqPct,
+    QQQ: props.qqqPct,
+    SOXL: props.soxlPct,
+    SOXX: props.soxxPct,
+    BTC: props.btcPct,
+    GLD: props.gldPct,
+    SLV: props.slvPct
+  }
+  const total = ASSETS.reduce((sum, asset) => sum + values[asset.key], 0)
   const [locked, setLocked] = useState<Record<AssetKey, boolean>>({
     SPXL: false,
     VTI: false,
     BRGNX: false,
     TQQQ: false,
+    QQQ: false,
+    SOXL: false,
+    SOXX: false,
     BTC: false,
     GLD: false,
     SLV: false
@@ -29,175 +64,79 @@ export function PieBuilder({ spxlPct, vtiPct, brgnxPct, tqqqPct, btcPct, gldPct,
     setLocked(prev => ({ ...prev, [asset]: !prev[asset] }))
   }
 
+  const emit = (next: Record<AssetKey, number>) => {
+    onChange({
+      spxlPct: next.SPXL,
+      vtiPct: next.VTI,
+      brgnxPct: next.BRGNX,
+      tqqqPct: next.TQQQ,
+      qqqPct: next.QQQ,
+      soxlPct: next.SOXL,
+      soxxPct: next.SOXX,
+      btcPct: next.BTC,
+      gldPct: next.GLD,
+      slvPct: next.SLV
+    })
+  }
+
   const handleChange = (asset: AssetKey, value: number) => {
-    let newSpxl = spxlPct
-    let newVti = vtiPct
-    let newBrgnx = brgnxPct
-    let newTqqq = tqqqPct
-    let newBtc = btcPct
-    let newGld = gldPct
-    let newSlv = slvPct
-
-    // Set the changed value
-    if (asset === 'SPXL') newSpxl = value
-    else if (asset === 'VTI') newVti = value
-    else if (asset === 'BRGNX') newBrgnx = value
-    else if (asset === 'TQQQ') newTqqq = value
-    else if (asset === 'BTC') newBtc = value
-    else if (asset === 'GLD') newGld = value
-    else newSlv = value
-
-    // Calculate difference from 100%
-    const newTotal = newSpxl + newVti + newBrgnx + newTqqq + newBtc + newGld + newSlv
-    const diff = newTotal - 100
+    const next: Record<AssetKey, number> = { ...values, [asset]: value }
+    const diff = ASSETS.reduce((sum, item) => sum + next[item.key], 0) - 100
 
     if (diff !== 0) {
-      // Get unlocked others (not the changed one, and not locked)
-      const unlocked: { asset: AssetKey; val: number }[] = []
-      if (asset !== 'SPXL' && !locked.SPXL) unlocked.push({ asset: 'SPXL', val: newSpxl })
-      if (asset !== 'VTI' && !locked.VTI) unlocked.push({ asset: 'VTI', val: newVti })
-      if (asset !== 'BRGNX' && !locked.BRGNX) unlocked.push({ asset: 'BRGNX', val: newBrgnx })
-      if (asset !== 'TQQQ' && !locked.TQQQ) unlocked.push({ asset: 'TQQQ', val: newTqqq })
-      if (asset !== 'BTC' && !locked.BTC) unlocked.push({ asset: 'BTC', val: newBtc })
-      if (asset !== 'GLD' && !locked.GLD) unlocked.push({ asset: 'GLD', val: newGld })
-      if (asset !== 'SLV' && !locked.SLV) unlocked.push({ asset: 'SLV', val: newSlv })
-
-      const unlockedTotal = unlocked.reduce((sum, u) => sum + u.val, 0)
-
+      const unlocked = ASSETS.filter(item => item.key !== asset && !locked[item.key])
+      const unlockedTotal = unlocked.reduce((sum, item) => sum + next[item.key], 0)
       if (unlocked.length > 0 && (unlockedTotal > 0 || diff < 0)) {
-        // Distribute the difference to unlocked assets
-        for (const u of unlocked) {
+        for (const item of unlocked) {
           const adjust = unlockedTotal > 0
-            ? (diff * u.val / unlockedTotal)
+            ? (diff * next[item.key] / unlockedTotal)
             : (diff / unlocked.length)
-          const newVal = Math.max(0, Math.min(100, u.val - adjust))
-          if (u.asset === 'SPXL') newSpxl = newVal
-          else if (u.asset === 'VTI') newVti = newVal
-          else if (u.asset === 'BRGNX') newBrgnx = newVal
-          else if (u.asset === 'TQQQ') newTqqq = newVal
-          else if (u.asset === 'BTC') newBtc = newVal
-          else if (u.asset === 'GLD') newGld = newVal
-          else newSlv = newVal
+          next[item.key] = Math.max(0, Math.min(100, next[item.key] - adjust))
         }
       }
     }
 
-    // Round to whole numbers
-    newSpxl = Math.round(newSpxl)
-    newVti = Math.round(newVti)
-    newBrgnx = Math.round(newBrgnx)
-    newTqqq = Math.round(newTqqq)
-    newBtc = Math.round(newBtc)
-    newGld = Math.round(newGld)
-    newSlv = Math.round(newSlv)
+    for (const item of ASSETS) next[item.key] = Math.round(next[item.key])
 
-    // Final adjustment to ensure exactly 100% after rounding (only adjust unlocked)
-    const finalTotal = newSpxl + newVti + newBrgnx + newTqqq + newBtc + newGld + newSlv
+    const finalTotal = ASSETS.reduce((sum, item) => sum + next[item.key], 0)
     if (finalTotal !== 100) {
-      const adjust = 100 - finalTotal
-      // Find largest unlocked non-changed value to adjust
-      const adjustable = [
-        { asset: 'SPXL' as AssetKey, val: newSpxl, canAdjust: asset !== 'SPXL' && !locked.SPXL },
-        { asset: 'VTI' as AssetKey, val: newVti, canAdjust: asset !== 'VTI' && !locked.VTI },
-        { asset: 'BRGNX' as AssetKey, val: newBrgnx, canAdjust: asset !== 'BRGNX' && !locked.BRGNX },
-        { asset: 'TQQQ' as AssetKey, val: newTqqq, canAdjust: asset !== 'TQQQ' && !locked.TQQQ },
-        { asset: 'BTC' as AssetKey, val: newBtc, canAdjust: asset !== 'BTC' && !locked.BTC },
-        { asset: 'GLD' as AssetKey, val: newGld, canAdjust: asset !== 'GLD' && !locked.GLD },
-        { asset: 'SLV' as AssetKey, val: newSlv, canAdjust: asset !== 'SLV' && !locked.SLV }
-      ].filter(a => a.canAdjust).sort((a, b) => b.val - a.val)
-
-      if (adjustable.length > 0) {
-        if (adjustable[0].asset === 'SPXL') newSpxl += adjust
-        else if (adjustable[0].asset === 'VTI') newVti += adjust
-        else if (adjustable[0].asset === 'BRGNX') newBrgnx += adjust
-        else if (adjustable[0].asset === 'TQQQ') newTqqq += adjust
-        else if (adjustable[0].asset === 'BTC') newBtc += adjust
-        else if (adjustable[0].asset === 'GLD') newGld += adjust
-        else newSlv += adjust
-      }
+      const adjustable = ASSETS
+        .filter(item => item.key !== asset && !locked[item.key])
+        .sort((a, b) => next[b.key] - next[a.key])
+      const target = adjustable[0]
+      if (target) next[target.key] += 100 - finalTotal
     }
 
-    onChange(newSpxl, newVti, newBrgnx, newTqqq, newBtc, newGld, newSlv)
+    emit(next)
   }
 
   return (
     <div className="space-y-1.5">
-      {/* Visual bar */}
       <div className="h-5 rounded overflow-hidden flex">
-        {spxlPct > 0 && (
+        {ASSETS.map(asset => values[asset.key] > 0 && (
           <div
+            key={asset.key}
             className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${spxlPct}%`, backgroundColor: '#3b82f6' }}
-            title={`SPXL: ${spxlPct}%`}
+            style={{ width: `${values[asset.key]}%`, backgroundColor: asset.color }}
+            title={`${asset.key}: ${values[asset.key]}%`}
           >
-            {spxlPct > 20 ? `SPXL ${spxlPct}%` : spxlPct > 10 ? `${spxlPct}%` : ''}
+            {values[asset.key] > 20 ? `${asset.key} ${values[asset.key]}%` : values[asset.key] > 10 ? `${values[asset.key]}%` : ''}
           </div>
-        )}
-        {vtiPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${vtiPct}%`, backgroundColor: '#8b5cf6' }}
-            title={`VTI: ${vtiPct}%`}
-          >
-            {vtiPct > 20 ? `VTI ${vtiPct}%` : vtiPct > 10 ? `${vtiPct}%` : ''}
-          </div>
-        )}
-        {brgnxPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${brgnxPct}%`, backgroundColor: '#06b6d4' }}
-            title={`BRGNX: ${brgnxPct}%`}
-          >
-            {brgnxPct > 20 ? `BRGNX ${brgnxPct}%` : brgnxPct > 10 ? `${brgnxPct}%` : ''}
-          </div>
-        )}
-        {tqqqPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${tqqqPct}%`, backgroundColor: '#22c55e' }}
-            title={`TQQQ: ${tqqqPct}%`}
-          >
-            {tqqqPct > 20 ? `TQQQ ${tqqqPct}%` : tqqqPct > 10 ? `${tqqqPct}%` : ''}
-          </div>
-        )}
-        {btcPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${btcPct}%`, backgroundColor: '#f97316' }}
-            title={`BTC: ${btcPct}%`}
-          >
-            {btcPct > 20 ? `BTC ${btcPct}%` : btcPct > 10 ? `${btcPct}%` : ''}
-          </div>
-        )}
-        {gldPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${gldPct}%`, backgroundColor: '#eab308' }}
-            title={`GLD: ${gldPct}%`}
-          >
-            {gldPct > 20 ? `GLD ${gldPct}%` : gldPct > 10 ? `${gldPct}%` : ''}
-          </div>
-        )}
-        {slvPct > 0 && (
-          <div
-            className="flex items-center justify-center text-[9px] text-white font-medium gap-1"
-            style={{ width: `${slvPct}%`, backgroundColor: '#94a3b8' }}
-            title={`SLV: ${slvPct}%`}
-          >
-            {slvPct > 20 ? `SLV ${slvPct}%` : slvPct > 10 ? `${slvPct}%` : ''}
-          </div>
-        )}
+        ))}
       </div>
 
-      {/* Sliders */}
       <div className="space-y-1">
-        <SliderControl label="SPXL" value={spxlPct} onChange={(v) => handleChange('SPXL', v)} color="#3b82f6" locked={locked.SPXL} onToggleLock={() => toggleLock('SPXL')} />
-        <SliderControl label="VTI" value={vtiPct} onChange={(v) => handleChange('VTI', v)} color="#8b5cf6" locked={locked.VTI} onToggleLock={() => toggleLock('VTI')} />
-        <SliderControl label="BRGNX" value={brgnxPct} onChange={(v) => handleChange('BRGNX', v)} color="#06b6d4" locked={locked.BRGNX} onToggleLock={() => toggleLock('BRGNX')} />
-        <SliderControl label="TQQQ" value={tqqqPct} onChange={(v) => handleChange('TQQQ', v)} color="#22c55e" locked={locked.TQQQ} onToggleLock={() => toggleLock('TQQQ')} />
-        <SliderControl label="BTC" value={btcPct} onChange={(v) => handleChange('BTC', v)} color="#f97316" locked={locked.BTC} onToggleLock={() => toggleLock('BTC')} />
-        <SliderControl label="GLD" value={gldPct} onChange={(v) => handleChange('GLD', v)} color="#eab308" locked={locked.GLD} onToggleLock={() => toggleLock('GLD')} />
-        <SliderControl label="SLV" value={slvPct} onChange={(v) => handleChange('SLV', v)} color="#94a3b8" locked={locked.SLV} onToggleLock={() => toggleLock('SLV')} />
+        {ASSETS.map(asset => (
+          <SliderControl
+            key={asset.key}
+            label={asset.key}
+            value={values[asset.key]}
+            onChange={(v) => handleChange(asset.key, v)}
+            color={asset.color}
+            locked={locked[asset.key]}
+            onToggleLock={() => toggleLock(asset.key)}
+          />
+        ))}
       </div>
 
       {total !== 100 && (
@@ -230,7 +169,7 @@ function SliderControl({ label, value, onChange, color, locked, onToggleLock }: 
       >
         {locked ? '🔒' : '🔓'}
       </button>
-      <span className="text-[10px] text-slate-400 w-9">{label}</span>
+      <span className="text-[10px] text-slate-400 w-10">{label}</span>
       <input
         type="range"
         min="0"

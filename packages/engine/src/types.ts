@@ -198,6 +198,33 @@ export interface SubFundConfig {
    */
   audited?: string
 
+  /**
+   * Route new buys from a daily-reset leveraged fund to its 1x equivalent
+   * while the fund is in a deep drawdown or its underlying is below a moving average.
+   * Off unless set. Existing funds are unchanged.
+   */
+  fallback_enabled?: boolean
+
+  /**
+   * Drawdown that triggers the 1x fallback, as a positive fraction.
+   * 0.60 means "down 60%" from the fund's peak or from cost basis.
+   * Defaults to 0.60 when the rule is enabled.
+   */
+  fallback_drawdown_pct?: number
+
+  /**
+   * Underlying moving-average length, in trading days. Defaults to 200.
+   * New buys return to the leveraged fund only once this trend has recovered
+   * and the drawdown is back inside the threshold.
+   */
+  fallback_ma_days?: number
+
+  /**
+   * Ticker that receives new buys while the fallback is active.
+   * Typical pairs: TQQQ→QQQ, SOXL→SOXX, SPXL→SPY (VOO is the same exposure).
+   */
+  fallback_ticker?: string
+
   // ============================================
   // Derivatives-specific configuration fields
   // ============================================
@@ -303,6 +330,11 @@ export interface Recommendation {
   amount: number
   explanation: Explanation
   insufficient_cash?: boolean
+  /**
+   * Set only when the 1x fallback rule is enabled and active.
+   * A BUY of this amount should be placed in this ticker instead of the leveraged fund.
+   */
+  route_ticker?: string
 }
 
 /**

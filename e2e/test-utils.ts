@@ -85,6 +85,7 @@ export interface Recommendation {
     reasoning: string
   }
   insufficient_cash?: boolean
+  route_ticker?: string
 }
 
 // API helper functions

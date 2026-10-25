@@ -7,7 +7,7 @@ export async function loadHistoricalData(): Promise<Record<string, HistoricalDat
   if (cachedData) return cachedData
 
   const base = import.meta.env.BASE_URL
-  const [spxl, spy, vti, brgnx, tqqq, btc, gld, slv] = await Promise.all([
+  const [spxl, spy, vti, brgnx, tqqq, btc, gld, slv, qqq, soxx, soxl] = await Promise.all([
     fetch(`${base}data/spxl-weekly.json`).then(r => {
       if (!r.ok) throw new Error(`Failed to load SPXL data: ${r.statusText}`)
       return r.json()
@@ -39,6 +39,18 @@ export async function loadHistoricalData(): Promise<Record<string, HistoricalDat
     fetch(`${base}data/slv-weekly.json`).then(r => {
       if (!r.ok) throw new Error(`Failed to load SLV data: ${r.statusText}`)
       return r.json()
+    }),
+    fetch(`${base}data/qqq-weekly.json`).then(r => {
+      if (!r.ok) throw new Error(`Failed to load QQQ data: ${r.statusText}`)
+      return r.json()
+    }),
+    fetch(`${base}data/soxx-weekly.json`).then(r => {
+      if (!r.ok) throw new Error(`Failed to load SOXX data: ${r.statusText}`)
+      return r.json()
+    }),
+    fetch(`${base}data/soxl-weekly.json`).then(r => {
+      if (!r.ok) throw new Error(`Failed to load SOXL data: ${r.statusText}`)
+      return r.json()
     })
   ])
 
@@ -50,7 +62,10 @@ export async function loadHistoricalData(): Promise<Record<string, HistoricalDat
     TQQQ: tqqq as HistoricalData,
     BTC: btc as HistoricalData,
     GLD: gld as HistoricalData,
-    SLV: slv as HistoricalData
+    SLV: slv as HistoricalData,
+    QQQ: qqq as HistoricalData,
+    SOXX: soxx as HistoricalData,
+    SOXL: soxl as HistoricalData
   }
 
   return cachedData

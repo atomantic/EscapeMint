@@ -8,7 +8,8 @@ import {
   FUND_TYPE_DEFAULTS,
   FUND_CATEGORIES,
   FUND_CATEGORY_CONFIG,
-  DEFAULT_CATEGORY_BY_TYPE
+  DEFAULT_CATEGORY_BY_TYPE,
+  defaultFallbackTicker
 } from '@escapemint/engine'
 
 interface CreateFundModalProps {
@@ -48,6 +49,10 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
     accumulate: true,
     manage_cash: true,
     margin_enabled: false,
+    fallback_enabled: false,
+    fallback_drawdown_pct: 60,
+    fallback_ma_days: 200,
+    fallback_ticker: '',
     dividend_reinvest: true,
     interest_reinvest: true,
     expense_from_fund: true
@@ -147,6 +152,20 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
       toast.error('Platform and ticker are required')
       return
     }
+    if (features.allowsTrading && formData.fallback_enabled) {
+      if (!formData.fallback_ticker.trim()) {
+        toast.error('1x fallback needs a ticker (QQQ, SOXX, SPY, or VOO)')
+        return
+      }
+      if (formData.fallback_drawdown_pct < 0 || formData.fallback_drawdown_pct > 100) {
+        toast.error('Fallback drawdown must be between 0 and 100')
+        return
+      }
+      if (formData.fallback_ma_days < 1) {
+        toast.error('Fallback moving average must be at least 1 day')
+        return
+      }
+    }
     setLoading(true)
     let createdNewPlatform = false
 
@@ -188,6 +207,14 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
         accumulate: features.allowsTrading ? formData.accumulate : (defaults.accumulate ?? true),
         manage_cash: features.allowsTrading ? formData.manage_cash : (defaults.manage_cash ?? true),
         margin_enabled: features.allowsTrading ? formData.margin_enabled : (defaults.margin_enabled ?? false),
+        ...(features.allowsTrading && formData.fallback_enabled
+          ? {
+              fallback_enabled: true,
+              fallback_drawdown_pct: round(formData.fallback_drawdown_pct / 100, 4),
+              fallback_ma_days: Math.round(formData.fallback_ma_days),
+              fallback_ticker: formData.fallback_ticker.trim().toUpperCase()
+            }
+          : {}),
         dividend_reinvest: formData.dividend_reinvest,
         interest_reinvest: formData.interest_reinvest,
         expense_from_fund: formData.expense_from_fund
@@ -590,6 +617,77 @@ export function CreateFundModal({ onClose, onCreated }: CreateFundModalProps) {
                     <p className="text-[10px] text-slate-500 ml-7">
                       Cash will be managed at the platform level and shared with other funds
                     </p>
+                  )}
+                </div>
+                <div className="border border-slate-600 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="fallback_enabled"
+                      checked={formData.fallback_enabled}
+                      onChange={e => {
+                        const enabled = e.target.checked
+                        setFormData(prev => ({
+                          ...prev,
+                          fallback_enabled: enabled,
+                          fallback_ticker: enabled && !prev.fallback_ticker.trim()
+                            ? (defaultFallbackTicker(ticker) ?? '')
+                            : prev.fallback_ticker
+                        }))
+                      }}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-mint-500 focus:ring-mint-500"
+                    />
+                    <label htmlFor="fallback_enabled" className="text-sm text-white">
+                      1x fallback
+                      <span className="text-slate-400 text-xs ml-2">(off by default; new buys only)</span>
+                    </label>
+                  </div>
+                  {formData.fallback_enabled && (
+                    <div className="ml-7 space-y-2">
+                      <p className="text-[10px] text-slate-500">
+                        While this fund is down past the threshold, or its underlying is below the moving average, new buys go to the 1x ticker. Shares already held stay put. This rule does not use margin.
+                      </p>
+                      {formData.margin_enabled && (
+                        <p className="text-[10px] text-amber-400">
+                          Leave margin off while the fallback is on. The two do not combine.
+                        </p>
+                      )}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1">1x ticker</label>
+                          <input
+                            type="text"
+                            value={formData.fallback_ticker}
+                            onChange={e => setFormData({ ...formData, fallback_ticker: e.target.value.toUpperCase() })}
+                            className="w-full px-2 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white uppercase focus:outline-none focus:border-mint-500"
+                            placeholder="QQQ"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1">Drawdown (%)</label>
+                          <input
+                            type="number"
+                            value={formData.fallback_drawdown_pct}
+                            onChange={e => setFormData({ ...formData, fallback_drawdown_pct: parseFloat(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500"
+                            step="1"
+                            min="0"
+                            max="100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] text-slate-500 mb-1">MA days</label>
+                          <input
+                            type="number"
+                            value={formData.fallback_ma_days}
+                            onChange={e => setFormData({ ...formData, fallback_ma_days: parseInt(e.target.value) || 0 })}
+                            className="w-full px-2 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-mint-500"
+                            step="1"
+                            min="1"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
