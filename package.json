@@ -67,7 +67,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "pm2": "^7.0.3",
-    "tsx": "^4.21.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.61.1"
   },
